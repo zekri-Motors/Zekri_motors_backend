@@ -120,6 +120,9 @@ class CustomerPayment extends Model
      */
     public function getGeneralTreasuryTransferStatusAttribute(): ?string
     {
+        if ($this->agent_id === null && $this->receiver && $this->receiver->hasAnyRole(['admin', 'super-admin'])) {
+            return 'approved';
+        }
         return $this->generalTreasuryTransfer?->status;
     }
 }

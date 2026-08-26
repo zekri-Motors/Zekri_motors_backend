@@ -106,7 +106,14 @@ class CustomerPaymentTest extends TestCase
         $this->assertDatabaseHas('treasury_transactions', [
             'source_type' => TreasuryTransaction::SOURCE_CUSTOMER_PAYMENT,
             'source_id' => $payment->id,
+            'direction' => TreasuryTransaction::DIRECTION_IN,
             'amount' => 5000,
+        ]);
+
+        $this->assertDatabaseMissing('treasury_transactions', [
+            'source_type' => TreasuryTransaction::SOURCE_CUSTOMER_PAYMENT,
+            'source_id' => $payment->id,
+            'direction' => TreasuryTransaction::DIRECTION_OUT,
         ]);
     }
 

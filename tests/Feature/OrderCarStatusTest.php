@@ -84,7 +84,7 @@ class OrderCarStatusTest extends TestCase
         ])->assertCreated();
 
         $this->assertSame(Car::STATUS_SOLD, $car->fresh()->status);
-        $this->assertSame($firstOwner->id, $car->fresh('firstOrder')->firstOrder->customer_id);
+        $this->assertSame($currentOwner->id, $car->fresh('firstOrder')->firstOrder->customer_id);
         $this->assertSame($currentOwner->id, $car->fresh('currentOrder')->currentOrder->customer_id);
     }
 

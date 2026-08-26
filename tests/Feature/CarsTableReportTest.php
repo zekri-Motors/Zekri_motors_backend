@@ -92,9 +92,9 @@ class CarsTableReportTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.0.brand', 'Ford')
-            ->assertJsonPath('data.0.first_owner_name', 'John Doe First Owner')
-            ->assertJsonPath('data.0.first_owner_passport_no', 'P111222')
-            ->assertJsonPath('data.0.first_owner_national_id', '111222')
+            ->assertJsonPath('data.0.first_owner_name', 'Jane Smith Current Owner')
+            ->assertJsonPath('data.0.first_owner_passport_no', 'P333444')
+            ->assertJsonPath('data.0.first_owner_national_id', '333444')
             ->assertJsonPath('data.0.current_owner_name', 'Jane Smith Current Owner')
             ->assertJsonPath('data.0.current_owner_passport_no', 'P333444')
             ->assertJsonPath('data.0.current_owner_national_id', '333444');

@@ -89,12 +89,12 @@ class CarOwnerDisplayTest extends TestCase
         $response = $this->getJson("/api/cars/{$car->id}");
 
         $response->assertOk()
-            ->assertJsonPath('data.first_owner.id', $customer1->id)
-            ->assertJsonPath('data.first_owner.name', $customer1->name)
-            ->assertJsonPath('data.first_owner.passport_no', $customer1->passport_no)
-            ->assertJsonPath('data.first_owner.national_id', $customer1->national_id)
-            ->assertJsonPath('data.first_owner.email', $customer1->email)
-            ->assertJsonPath('data.first_owner.address', $customer1->address)
+            ->assertJsonPath('data.first_owner.id', $customer2->id)
+            ->assertJsonPath('data.first_owner.name', $customer2->name)
+            ->assertJsonPath('data.first_owner.passport_no', $customer2->passport_no)
+            ->assertJsonPath('data.first_owner.national_id', $customer2->national_id)
+            ->assertJsonPath('data.first_owner.email', $customer2->email)
+            ->assertJsonPath('data.first_owner.address', $customer2->address)
             ->assertJsonPath('data.current_owner.id', $customer2->id)
             ->assertJsonPath('data.current_owner.name', $customer2->name)
             ->assertJsonPath('data.current_owner.passport_no', $customer2->passport_no)
@@ -105,7 +105,7 @@ class CarOwnerDisplayTest extends TestCase
         // GET cars list
         $responseList = $this->getJson('/api/cars');
         $responseList->assertOk()
-            ->assertJsonPath('data.0.first_owner.name', $customer1->name)
+            ->assertJsonPath('data.0.first_owner.name', $customer2->name)
             ->assertJsonPath('data.0.current_owner.name', $customer2->name);
     }
 

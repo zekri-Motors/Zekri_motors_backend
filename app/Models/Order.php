@@ -8,9 +8,66 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+use Illuminate\Support\Facades\Auth;
+
 class Order extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::created(function (Order $order) {
+            $previousOrders = self::where('car_id', $order->car_id)
+                ->where('customer_id', '!=', $order->customer_id)
+                ->where('id', '!=', $order->id)
+                ->get();
+
+            foreach ($previousOrders as $oldOrder) {
+                foreach ($oldOrder->payments as $payment) {
+                    $creatorId = Auth::id() ?? $payment->created_by ?? (\App\Models\User::first()?->id ?? 1);
+
+                    if ($payment->wasCollectedByAgent()) {
+                        $previousBalance = (float) (AgentTransaction::where('agent_id', $payment->agent_id)
+                            ->latest('id')
+                            ->value('current_balence') ?? 0);
+                        $newBalance = $previousBalance + (float) $payment->amount;
+
+                        AgentTransaction::create([
+                            'agent_id' => $payment->agent_id,
+                            'direction' => AgentTransaction::DIRECTION_IN,
+                            'amount' => $payment->amount,
+                            'previous_balence' => $previousBalance,
+                            'current_balence' => $newBalance,
+                            'payment_id' => $payment->id,
+                            'transaction_date' => now()->toDateString(),
+                            'notes' => 'إلغاء قبض دفعة عميل محذوفة رقم #' . $payment->id . ' بسبب انتقال ملكية السيارة',
+                            'created_by' => $creatorId,
+                        ]);
+                    } else {
+                        $previousBalance = (float) (TreasuryTransaction::approved()->latest('id')->value('current_balence') ?? 0);
+                        $newBalance = $previousBalance - (float) $payment->amount;
+
+                        TreasuryTransaction::create([
+                            'direction' => TreasuryTransaction::DIRECTION_OUT,
+                            'amount' => $payment->amount,
+                            'previous_balence' => $previousBalance,
+                            'current_balence' => $newBalance,
+                            'source_type' => TreasuryTransaction::SOURCE_CUSTOMER_PAYMENT,
+                            'source_id' => $payment->id,
+                            'transaction_date' => now()->toDateString(),
+                            'status' => TreasuryTransaction::STATUS_APPROVED,
+                            'notes' => 'إلغاء دفعة عميل محذوفة رقم #' . $payment->id . ' بسبب انتقال ملكية السيارة',
+                            'created_by' => $creatorId,
+                        ]);
+                    }
+                    $payment->delete();
+                }
+
+                $oldOrder->invoice()?->delete();
+                $oldOrder->delete();
+            }
+        });
+    }
 
     /**
      * Order lifecycle. Deliberately identical, name-for-name, to Car's own

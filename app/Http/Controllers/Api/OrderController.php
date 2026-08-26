@@ -31,6 +31,7 @@ class OrderController extends Controller
 
         // أول طلب (أقل id) لكل سيارة - هيتم استثناؤه
         $firstOrderIdsPerCar = Order::query()
+            ->whereIn('status', [Order::STATUS_SHIPPING, Order::STATUS_IN_SHOW_ROOM, Order::STATUS_AVAILABLE])
             ->selectRaw('MIN(id) as id')
             ->groupBy('car_id');
 

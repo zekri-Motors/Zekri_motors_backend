@@ -101,14 +101,14 @@ class CarOwnershipHistoryTest extends TestCase
         $response = $this->getJson("/api/cars/{$car->id}/ownership-history");
 
         $response->assertOk()
-            ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.order_id', $order1->id)
-            ->assertJsonPath('data.0.order_number', 'ORD-901')
-            ->assertJsonPath('data.0.customer.name', 'First Owner')
-            ->assertJsonPath('data.0.customer.national_id', '999111')
-            ->assertJsonPath('data.1.order_id', $order2->id)
-            ->assertJsonPath('data.1.order_number', 'ORD-902')
-            ->assertJsonPath('data.1.customer.name', 'Second Owner')
-            ->assertJsonPath('data.1.customer.national_id', '999222');
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.order_id', $order2->id)
+            ->assertJsonPath('data.0.order_number', 'ORD-902')
+            ->assertJsonPath('data.0.customer.name', 'Second Owner')
+            ->assertJsonPath('data.0.customer.national_id', '999222');
+
+        $this->assertDatabaseMissing('orders', [
+            'id' => $order1->id,
+        ]);
     }
 }

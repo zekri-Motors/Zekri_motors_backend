@@ -111,6 +111,7 @@ class DashboardController extends Controller
     protected function firstOrderIdsPerCarQuery()
     {
         return Order::query()
+            ->whereIn('status', [Order::STATUS_SHIPPING, Order::STATUS_IN_SHOW_ROOM, Order::STATUS_AVAILABLE])
             ->selectRaw('MIN(id) as id')
             ->groupBy('car_id');
     }

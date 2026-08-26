@@ -107,24 +107,6 @@ class CustomerPaymentController extends Controller
                 $this->postTreasuryMovement($payment, $request->user()->id);
 
                 if ($isAdminOrSuperAdmin) {
-                    $previousBalance = (float) (TreasuryTransaction::query()->approved()->latest('id')->value('current_balence') ?? 0);
-                    $newBalance = $previousBalance + (float) $payment->amount;
-
-                    TreasuryTransaction::create([
-                        'direction' => TreasuryTransaction::DIRECTION_OUT,
-                        'amount' => $payment->amount,
-                        'previous_balence' => $previousBalance,
-                        'current_balence' => $newBalance,
-                        'source_type' => TreasuryTransaction::SOURCE_CUSTOMER_PAYMENT,
-                        'source_id' => $payment->id,
-                        'transaction_date' => $payment->payment_date ? $payment->payment_date->toDateString() : now()->toDateString(),
-                        'status' => TreasuryTransaction::STATUS_APPROVED,
-                        'notes' => 'تحويل دفعة عميل رقم #' . $payment->id . ' إلى الخزينة العامة - معتمد تلقائياً عند الإنشاء',
-                        'created_by' => $request->user()->id,
-                        'approved_by' => $request->user()->id,
-                        'approved_at' => now(),
-                    ]);
-
                     $payment->update([
                         'approved_by' => $request->user()->id,
                         'approved_at' => now(),
@@ -325,12 +307,15 @@ class CustomerPaymentController extends Controller
     {
         $this->authorize('view', $customerPayment);
 
-        if ($customerPayment->generalTreasuryTransfer) {
-            $statusMsg = $customerPayment->generalTreasuryTransfer->status === TreasuryTransaction::STATUS_APPROVED
-                ? 'تم تحويل هذه الدفعة واعتمادها في الخزينة العامة بالفعل'
-                : 'هذه الدفعة قيد التحويل للخزينة العامة بالفعل، بانتظار اعتماد الإدارة';
+        if ($customerPayment->general_treasury_transfer_status === 'approved') {
             return response()->json([
-                'message' => $statusMsg,
+                'message' => 'تم تحويل هذه الدفعة واعتمادها في الخزينة العامة بالفعل',
+            ], 422);
+        }
+
+        if ($customerPayment->generalTreasuryTransfer) {
+            return response()->json([
+                'message' => 'هذه الدفعة قيد التحويل للخزينة العامة بالفعل، بانتظار اعتماد الإدارة',
             ], 422);
         }
 
