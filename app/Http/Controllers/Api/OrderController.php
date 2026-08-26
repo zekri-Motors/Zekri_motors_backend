@@ -99,7 +99,7 @@ class OrderController extends Controller
                 'status' => $isOwnershipTransfer ? Car::STATUS_SOLD : Car::STATUS_SHIPPING,
             ]);
 
-            return $order;
+            return $order->fresh();
         });
 
         return response()->json([

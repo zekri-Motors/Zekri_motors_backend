@@ -79,14 +79,16 @@ class OrderCarStatusTest extends TestCase
 
         $this->assertSame(Car::STATUS_SHIPPING, $car->fresh()->status);
 
-        $this->postJson('/api/orders', [
+        $currentOrderResponse = $this->postJson('/api/orders', [
             'customer_id' => $currentOwner->id,
             'car_id' => $car->id,
         ])->assertCreated();
 
         $this->assertSame(Car::STATUS_SOLD, $car->fresh()->status);
+        $currentOrderResponse->assertJsonPath('data.status', Order::STATUS_SOLD);
         $this->assertSame($firstOwner->id, $car->fresh('firstOrder')->firstOrder->customer_id);
         $this->assertSame($currentOwner->id, $car->fresh('currentOrder')->currentOrder->customer_id);
+        $this->assertSame(Order::STATUS_SOLD, $car->fresh('currentOrder')->currentOrder->status);
         $this->assertDatabaseHas('orders', [
             'id' => $firstOrderId,
             'customer_id' => $firstOwner->id,

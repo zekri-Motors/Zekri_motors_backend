@@ -50,7 +50,8 @@ class Car extends Model
 
     public const STATUS_DELIVERED = 'delivered';
 
-    public const STATUS_SOLD = 'sold';
+    public const STATUS_SOLD = '
+    ';
 
     protected $fillable = [
         'batch_id',
