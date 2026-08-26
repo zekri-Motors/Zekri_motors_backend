@@ -36,7 +36,7 @@ class SupplierPaymentResource extends JsonResource
             'payment_date' => $this->payment_date?->format('Y-m-d'),
             'notes' => $this->notes,
 
-            'created_by' => $this->created_by,
+            'created_by' => $this->creator->name,
             'creator' => $this->whenLoaded('creator', fn () => [
                 'id' => $this->creator->id,
                 'name' => $this->creator->name,
