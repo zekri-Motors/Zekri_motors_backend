@@ -232,18 +232,17 @@ class CustomerPaymentController extends Controller
             ]);
 
             $treasuryPrevious = (float) (TreasuryTransaction::query()->approved()->latest('id')->value('current_balence') ?? 0);
-            $treasuryNew = $treasuryPrevious + $amount;
 
             $treasuryTransaction = TreasuryTransaction::create([
                 'direction' => TreasuryTransaction::DIRECTION_IN,
                 'amount' => $amount,
                 'previous_balence' => $treasuryPrevious,
-                'current_balence' => $treasuryNew,
+                'current_balence' => $treasuryPrevious,
                 'source_type' => TreasuryTransaction::SOURCE_AGENT_REMITTANCE,
                 'source_id' => $agentTransaction->id,
                 'transaction_date' => $date,
-                'status' => TreasuryTransaction::STATUS_APPROVED,
-                'notes' => 'تحويل رصيد من الوكيل: ' . $agent->name,
+                'status' => TreasuryTransaction::STATUS_PENDING,
+                'notes' => 'تحويل رصيد من الوكيل: ' . $agent->name . ' - بانتظار اعتماد الإدارة',
                 'created_by' => $userId,
             ]);
 
@@ -263,7 +262,7 @@ class CustomerPaymentController extends Controller
             }
 
             return [
-                'agent_transaction' => $agentTransaction->fresh(['agent', 'remittance']),
+                'agent_transaction' => $agentTransaction->fresh(['agent', 'treasuryTransaction']),
                 'settled_payments' => $settledPayments,
                 'unallocated_remainder' => round($remaining, 2),
             ];

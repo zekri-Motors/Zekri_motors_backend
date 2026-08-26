@@ -242,6 +242,76 @@ class CustomerPaymentTest extends TestCase
         $this->assertNotNull($approveRegular->json('data.approved_at'));
     }
 
+    public function test_agent_remittance_stays_pending_until_admin_approval_and_records_approver(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $agentUser = User::create([
+            'name' => 'Agent User',
+            'email' => 'agent-user@test.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        $agentUser->assignRole('agent');
+        $this->agent->update(['user_id' => $agentUser->id]);
+
+        $this->postJson('/api/customer-payments', [
+            'order_id' => $this->order->id,
+            'customer_id' => $this->customer->id,
+            'amount' => 4000,
+            'agent_id' => $this->agent->id,
+            'payment_date' => now()->toDateString(),
+            'notes' => 'Payment collected by agent',
+        ])->assertCreated();
+
+        Sanctum::actingAs($agentUser);
+
+        $remitResponse = $this->postJson('/api/customer-payments/remit', [
+            'amount' => 4000,
+            'transaction_date' => now()->toDateString(),
+        ]);
+
+        $remitResponse->assertOk();
+        $remitResponse->assertJsonPath('data.agent_transaction.treasury_transaction.status', TreasuryTransaction::STATUS_PENDING);
+        $remitResponse->assertJsonPath('data.agent_transaction.treasury_transaction.approved_by', null);
+
+        $agentTransactionId = $remitResponse->json('data.agent_transaction.id');
+        $treasuryTransactionId = $remitResponse->json('data.agent_transaction.treasury_transaction.id');
+
+        $this->assertDatabaseHas('treasury_transactions', [
+            'id' => $treasuryTransactionId,
+            'source_type' => TreasuryTransaction::SOURCE_AGENT_REMITTANCE,
+            'source_id' => $agentTransactionId,
+            'status' => TreasuryTransaction::STATUS_PENDING,
+            'approved_by' => null,
+            'previous_balence' => 0,
+            'current_balence' => 0,
+        ]);
+
+        Sanctum::actingAs($this->user);
+
+        $approveResponse = $this->postJson("/api/agent-transactions/{$agentTransactionId}/approve-remittance");
+
+        $approveResponse->assertOk();
+        $approveResponse->assertJsonPath('data.treasury_transaction.status', TreasuryTransaction::STATUS_APPROVED);
+        $approveResponse->assertJsonPath('data.treasury_transaction.approved_by', $this->user->name);
+        $approveResponse->assertJsonPath('data.treasury_transaction.approver.name', $this->user->name);
+        $this->assertNotNull($approveResponse->json('data.treasury_transaction.approved_at'));
+
+        $this->assertDatabaseHas('treasury_transactions', [
+            'id' => $treasuryTransactionId,
+            'status' => TreasuryTransaction::STATUS_APPROVED,
+            'approved_by' => $this->user->id,
+            'previous_balence' => 0,
+            'current_balence' => 4000,
+        ]);
+        $this->assertDatabaseHas('customer_payments', [
+            'agent_id' => $this->agent->id,
+            'remittance_id' => $agentTransactionId,
+            'approved_by' => $this->user->id,
+        ]);
+    }
+
     public function test_treasury_summary_displays_customer_and_supplier_names(): void
     {
         Sanctum::actingAs($this->user);

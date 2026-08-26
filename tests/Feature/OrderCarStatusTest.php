@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Batch;
 use App\Models\Car;
 use App\Models\Customer;
+use App\Models\Order;
 use App\Models\Supplier;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -71,10 +72,10 @@ class OrderCarStatusTest extends TestCase
             'passport_no' => 'PAS-002',
         ]);
 
-        $this->postJson('/api/orders', [
+        $firstOrderId = $this->postJson('/api/orders', [
             'customer_id' => $firstOwner->id,
             'car_id' => $car->id,
-        ])->assertCreated();
+        ])->assertCreated()->json('data.id');
 
         $this->assertSame(Car::STATUS_SHIPPING, $car->fresh()->status);
 
@@ -84,8 +85,15 @@ class OrderCarStatusTest extends TestCase
         ])->assertCreated();
 
         $this->assertSame(Car::STATUS_SOLD, $car->fresh()->status);
-        $this->assertSame($currentOwner->id, $car->fresh('firstOrder')->firstOrder->customer_id);
+        $this->assertSame($firstOwner->id, $car->fresh('firstOrder')->firstOrder->customer_id);
         $this->assertSame($currentOwner->id, $car->fresh('currentOrder')->currentOrder->customer_id);
+        $this->assertDatabaseHas('orders', [
+            'id' => $firstOrderId,
+            'customer_id' => $firstOwner->id,
+            'paid_amount' => 0,
+            'remaining_amount' => 0,
+        ]);
+        $this->assertSame(2, Order::where('car_id', $car->id)->count());
     }
 
     /**

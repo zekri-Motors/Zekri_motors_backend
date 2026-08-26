@@ -36,6 +36,13 @@ class AgentTransactionResource extends JsonResource
                 'id' => $this->treasuryTransaction->id,
                 'direction' => $this->treasuryTransaction->direction,
                 'amount' => (float) $this->treasuryTransaction->amount,
+                'status' => $this->treasuryTransaction->status,
+                'approved_by' => $this->treasuryTransaction->approver?->name,
+                'approved_at' => $this->treasuryTransaction->approved_at?->format('Y-m-d H:i:s'),
+                'approver' => $this->treasuryTransaction->relationLoaded('approver') && $this->treasuryTransaction->approver ? [
+                    'id' => $this->treasuryTransaction->approver->id,
+                    'name' => $this->treasuryTransaction->approver->name,
+                ] : null,
             ] : null),
 
             'transaction_date' => $this->transaction_date?->format('Y-m-d'),

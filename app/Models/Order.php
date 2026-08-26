@@ -64,7 +64,10 @@ class Order extends Model
                 }
 
                 $oldOrder->invoice()?->delete();
-                $oldOrder->delete();
+                $oldOrder->forceFill([
+                    'paid_amount' => 0,
+                    'remaining_amount' => 0,
+                ])->save();
             }
         });
     }

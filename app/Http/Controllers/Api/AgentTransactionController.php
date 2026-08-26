@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Agent\ApproveAgentRemittanceRequest;
 use App\Http\Requests\AgentTransaction\StoreAgentTransactionRequest;
 use App\Http\Resources\AgentTransactionResource;
 use App\Models\AgentTransaction;
+use App\Models\CustomerPayment;
+use App\Models\TreasuryTransaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -84,10 +87,61 @@ class AgentTransactionController extends Controller
     {
         $this->authorize('view', $agentTransaction);
 
-        $agentTransaction->load(['agent', 'customerPayment', 'treasuryTransaction', 'creator']);
+        $agentTransaction->load(['agent', 'customerPayment', 'treasuryTransaction.approver', 'creator']);
 
         return response()->json([
             'data' => new AgentTransactionResource($agentTransaction),
+        ]);
+    }
+
+    public function approveRemittance(
+        ApproveAgentRemittanceRequest $request,
+        AgentTransaction $agentTransaction
+    ): JsonResponse {
+        $treasuryTransaction = TreasuryTransaction::query()
+            ->where('source_type', TreasuryTransaction::SOURCE_AGENT_REMITTANCE)
+            ->where('source_id', $agentTransaction->id)
+            ->where('direction', TreasuryTransaction::DIRECTION_IN)
+            ->where('status', TreasuryTransaction::STATUS_PENDING)
+            ->latest('id')
+            ->first();
+
+        if (! $treasuryTransaction) {
+            return response()->json([
+                'message' => 'لا يوجد تحويل خزينة معلق لهذه الحركة أو تم اعتماده سابقًا',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($request, $agentTransaction, $treasuryTransaction) {
+            $previousBalance = (float) (TreasuryTransaction::query()
+                ->approved()
+                ->latest('id')
+                ->value('current_balence') ?? 0);
+            $newBalance = $previousBalance + (float) $treasuryTransaction->amount;
+
+            $treasuryTransaction->update([
+                'status' => TreasuryTransaction::STATUS_APPROVED,
+                'previous_balence' => $previousBalance,
+                'current_balence' => $newBalance,
+                'transaction_date' => $request->input('approval_date', now()->toDateString()),
+                'notes' => $request->input('notes', $treasuryTransaction->notes),
+                'approved_by' => $request->user()->id,
+                'approved_at' => now(),
+            ]);
+
+            CustomerPayment::query()
+                ->where('remittance_id', $agentTransaction->id)
+                ->update([
+                    'approved_by' => $request->user()->id,
+                    'approved_at' => now(),
+                ]);
+        });
+
+        return response()->json([
+            'message' => 'تم اعتماد تحويل الوكيل إلى الخزينة بنجاح',
+            'data' => new AgentTransactionResource(
+                $agentTransaction->fresh(['agent', 'customerPayment', 'treasuryTransaction.approver', 'creator'])
+            ),
         ]);
     }
 

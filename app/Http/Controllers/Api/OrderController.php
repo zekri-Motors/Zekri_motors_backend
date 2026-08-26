@@ -145,7 +145,12 @@ class OrderController extends Controller
             $newStatus = $request->validated('status');
             $date = $request->input('date', now()->toDateString());
 
-            $car = $order->car()->lockForUpdate()->first();
+            // Query the model directly so static analysis knows this is a Car,
+            // rather than inferring the relation result as stdClass.
+            $car = Car::query()
+                ->whereKey($order->car_id)
+                ->lockForUpdate()
+                ->first();
 
             if (! $car) {
                 abort(422, 'لا توجد سيارة مرتبطة بهذا الطلب');

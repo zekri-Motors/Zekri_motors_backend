@@ -151,6 +151,7 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
     Route::apiResource('agent-transactions', AgentTransactionController::class)
         ->parameters(['agent-transactions' => 'agent_transaction'])
         ->except(['update']);
+    Route::post('agent-transactions/{agent_transaction}/approve-remittance', [AgentTransactionController::class, 'approveRemittance']);
 
     // ------------------------------------------------------------------
     // سابعًا: الفواتير والمصاريف والمستندات
