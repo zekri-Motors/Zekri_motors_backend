@@ -273,21 +273,40 @@ class AgentDataScopingTest extends TestCase
         $this->getJson("/api/customer-payments/{$this->payment2->id}")->assertStatus(403);
     }
 
-    public function test_agent_can_only_see_their_own_agent_transactions(): void
+    public function test_agent_transactions_endpoint_returns_only_their_own_agent_customer_payments(): void
     {
         Sanctum::actingAs($this->user1);
 
-        // List agent transactions
         $response = $this->getJson('/api/agent-transactions');
         $response->assertOk();
 
-        $txIds = collect($response->json('data'))->pluck('id')->all();
-        $this->assertContains($this->agentTx1->id, $txIds);
-        $this->assertNotContains($this->agentTx2->id, $txIds);
+        $paymentIds = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($this->payment1->id, $paymentIds);
+        $this->assertNotContains($this->payment2->id, $paymentIds);
 
-        // View details
+        // Single-record details still use the real ledger model.
         $this->getJson("/api/agent-transactions/{$this->agentTx1->id}")->assertOk();
         $this->getJson("/api/agent-transactions/{$this->agentTx2->id}")->assertStatus(403);
+    }
+
+    public function test_agent_transactions_endpoint_can_filter_agent_customer_payments_by_agent(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@zaki.com',
+            'password' => bcrypt('password123'),
+            'is_active' => true,
+        ]);
+        $admin->assignRole('admin');
+
+        Sanctum::actingAs($admin);
+
+        $response = $this->getJson('/api/agent-transactions?agent_id=' . $this->agent2->id);
+        $response->assertOk();
+
+        $paymentIds = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($this->payment2->id, $paymentIds);
+        $this->assertNotContains($this->payment1->id, $paymentIds);
     }
 
     public function test_agent_can_only_see_their_own_treasury_transfers(): void

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Agent\ApproveAgentRemittanceRequest;
 use App\Http\Requests\AgentTransaction\StoreAgentTransactionRequest;
 use App\Http\Resources\AgentTransactionResource;
+use App\Http\Resources\CustomerPaymentResource;
 use App\Models\AgentTransaction;
 use App\Models\CustomerPayment;
 use App\Models\TreasuryTransaction;
@@ -16,8 +17,8 @@ use Illuminate\Support\Facades\DB;
 class AgentTransactionController extends Controller
 {
     /**
-     * List ledger entries across all agents (admin) or just the
-     * requester's own ledger (agent with view_own only).
+     * List real agent-collected customer payments. Admins can filter by
+     * agent; agents only see payments collected under their own agent profile.
      */
     public function index(Request $request): JsonResponse
     {
@@ -25,23 +26,32 @@ class AgentTransactionController extends Controller
 
         $user = $request->user();
 
-        $query = AgentTransaction::query()
-            ->with(['agent:id,name', 'customerPayment', 'treasuryTransaction'])
-            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('transaction_date', '>=', $request->date('date_from')))
-            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('transaction_date', '<=', $request->date('date_to')));
+        $query = CustomerPayment::query()
+            ->with(['customer', 'agent', 'creator', 'generalTreasuryTransfer'])
+            ->whereNotNull('agent_id')
+            ->when($request->filled('order_id'), fn ($q) => $q->where('order_id', $request->integer('order_id')))
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('payment_date', '>=', $request->date('date_from')))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('payment_date', '<=', $request->date('date_to')));
 
         if ($user->agent) {
             $query->where('agent_id', $user->agent->id);
         } elseif ($user->can('agent_transactions.view')) {
-            $query->when($request->filled('agent_id'), fn ($q) => $q->where('agent_id', $request->integer('agent_id')));
+            $query
+                ->when($request->filled('customer_id'), fn ($q) => $q->where('customer_id', $request->integer('customer_id')))
+                ->when($request->filled('agent_id'), fn ($q) => $q->where('agent_id', $request->integer('agent_id')))
+                ->when($request->filled('is_remitted'), function ($q) use ($request) {
+                    $request->boolean('is_remitted')
+                        ? $q->whereNotNull('remittance_id')
+                        : $q->whereNull('remittance_id');
+                });
         } else {
             $query->where('agent_id', $user->agent?->id ?? 0);
         }
 
-        $transactions = $query->orderByDesc('transaction_date')->orderByDesc('id')
+        $payments = $query->orderByDesc('payment_date')->orderByDesc('id')
             ->paginate($request->integer('per_page', 30));
 
-        return response()->json(AgentTransactionResource::collection($transactions)->response()->getData(true));
+        return response()->json(CustomerPaymentResource::collection($payments)->response()->getData(true));
     }
 
     /**
