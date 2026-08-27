@@ -28,19 +28,14 @@ class OrderWithCarResource extends JsonResource
             'status'         => $this->status,
             'status_label'   => $this->statusLabel(),
 
-            // Car details — already eager-loaded via orders.car in
-            // CustomerController::show(), so no extra query here.
-            'car' => $this->whenLoaded('car', fn () => [
-                'id'               => $this->car->id,
-                'brand'            => $this->car->brand,
-                'model'            => $this->car->model,
-                'finition'         => $this->car->finition,
-                'manufacture_year' => $this->car->manufacture_year,
-                'color'            => $this->car->color,
-                'vin'              => $this->car->vin,
-                'sale_price'       => (float) $this->car->sale_price,
-                'status'           => $this->car->status,
-            ]),
+            // Car details — already eager-loaded via orders.car (plus
+            // orders.car.firstOrder.customer / orders.car.currentOrder.customer)
+            // in CustomerController::show(), so no extra queries here.
+            // Delegated to CarResource itself (rather than a hand-picked
+            // array) so this stays in sync with CarResource's field list,
+            // its cost/operational-data permission gating, and its
+            // first_owner/current_owner ownership-history fields.
+            'car' => new CarResource($this->whenLoaded('car')),
 
             'purchase_date'  => $this->purchase_date?->format('Y-m-d'),
             'shipping_date'  => $this->shipping_date?->format('Y-m-d'),
