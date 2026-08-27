@@ -98,13 +98,19 @@ class CustomerController extends Controller
     public function show(Request $request, Customer $customer): JsonResponse
     {
         $this->authorize('view', $customer);
-
-        $customer->load(['agent', 'orders.car', 'customerDocuments']);
-
+ 
+        $customer->load([
+            'agent',
+            'orders.car',
+            'orders.car.firstOrder.customer',
+            'orders.car.currentOrder.customer',
+            'customerDocuments',
+        ]);
+ 
         if ($request->user()->can('customer_payments.view')) {
             $customer->load('payments');
         }
-
+ 
         return response()->json([
             'data' => new CustomerResource($customer),
         ]);
