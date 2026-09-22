@@ -1,601 +1,355 @@
 openapi: 3.0.3
 info:
-  title: نظام إدارة استيراد وبيع السيارات - API
+  title: Zekri Motors Backend API
+  version: 1.1.0
   description: |
-    واجهة برمجية كاملة لإدارة عمليات استيراد وبيع السيارات: الموردين، السيارات،
-    العملاء، الوكلاء، الطلبات، الدفعات المالية، الفواتير، والإحصائيات.
+    ملف OpenAPI محدث حسب routes/api.php الحالي لاستخدامه في Bruno أو أي API client.
 
-    ## الأدوار والصلاحيات
-    - **super-admin**: صلاحية كاملة على كل أجزاء النظام، بما فيها أسعار الشراء
-      والشحن والربح لكل سيارة، وإدارة الأدوار والصلاحيات.
-    - **admin**: صلاحية كاملة على كل أجزاء النظام **ما عدا** أسعار الشراء
-      والشحن وأرباح كل سيارة (`cars.view_cost`, `reports.view_profit`).
-    - **agent**: الوصول فقط لعملائه وطلباته وكشف حسابه الخاص.
-    - **customer**: عرض طلباته وفواتيره ودفعاته فقط.
+    طريقة العمل في Bruno:
+    1. استورد هذا الملف.
+    2. نفذ طلب `POST /auth/login`.
+    3. احفظ قيمة `token` من الاستجابة في Runtime Variable باسم `token`.
+    4. كل الطلبات المحمية تستخدم `Authorization: Bearer {{token}}`.
 
-    ## المصادقة
-    كل المسارات (عدا `/auth/register` و `/auth/login`) تتطلب
-    `Authorization: Bearer <token>` تم الحصول عليه من تسجيل الدخول.
-  version: 1.0.0
-  contact:
-    name: فريق التطوير
-
+    سكربت Bruno المناسب في تبويب Post Response لطلب login:
+    ```js
+    bru.setVar("token", res.body.token);
+    ```
 servers:
   - url: http://localhost:8000/api
-    description: بيئة التطوير المحلية
+    description: Local Laravel server
   - url: https://your-domain.com/api
-    description: بيئة الإنتاج (عدّل الرابط)
+    description: Production
 
 security:
   - bearerAuth: []
 
 tags:
   - name: Auth
-    description: تسجيل الدخول، التسجيل، الجلسة الحالية
+  - name: Public
   - name: Suppliers
-    description: إدارة الموردين
   - name: SupplierPayments
-    description: دفعات الموردين
   - name: Batches
-    description: دفعات الاستيراد (الحاويات)
   - name: Cars
-    description: إدارة السيارات
+  - name: CarMedia
+  - name: GeneralMedia
+  - name: Tags
+  - name: Contacts
   - name: ContainerOpeners
-    description: جهات فتح الحاويات
   - name: ServiceProviders
-    description: مزودو الخدمات
   - name: Customers
-    description: إدارة العملاء
   - name: Agents
-    description: إدارة الوكلاء وكشوف حساباتهم
   - name: Orders
-    description: الطلبات وحالاتها
   - name: CustomerPayments
-    description: دفعات العملاء
   - name: AgentTransactions
-    description: حركات حساب الوكلاء
   - name: Expenses
-    description: المصاريف العامة
   - name: Invoices
-    description: الفواتير
-  - name: Documents
-    description: مستندات السيارات
   - name: Dashboard
-    description: الإحصائيات العامة
+  - name: Treasury
   - name: Users
-    description: إدارة المستخدمين والأدوار
   - name: Settings
-    description: إعدادات النظام
+  - name: PreOrderCars
+  - name: Documents
+
+x-bruno:
+  auth:
+    type: bearer
+    token: "{{token}}"
+  login:
+    request: POST /auth/login
+    postResponseScript: bru.setVar("token", res.body.token);
 
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: Sanctum Personal Access Token
-      description: "تسجّل دخول عبر /auth/login وتستخدم التوكن المُستلم: Authorization: Bearer <token>"
-
+      bearerFormat: Sanctum
+      description: استخدم Bearer token الناتج من POST /auth/login. في Bruno ضع القيمة `{{token}}`.
+      x-bruno:
+        token: "{{token}}"
   parameters:
-    PerPage:
-      name: per_page
-      in: query
-      description: عدد العناصر في الصفحة
-      schema:
-        type: integer
-        default: 15
-    Page:
-      name: page
-      in: query
-      description: رقم الصفحة
-      schema:
-        type: integer
-        default: 1
-    SearchParam:
-      name: search
-      in: query
-      description: بحث نصي
-      schema:
-        type: string
-
+    Page: { name: page, in: query, schema: { type: integer, default: 1 } }
+    PerPage: { name: per_page, in: query, schema: { type: integer, default: 15 } }
+    Search: { name: search, in: query, schema: { type: string } }
   responses:
-    Unauthenticated:
-      description: غير مسجل الدخول
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: Unauthenticated.
-    Forbidden:
-      description: لا تملك الصلاحية اللازمة
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: لا تملك الصلاحية اللازمة للقيام بهذا الإجراء
-    NotFound:
-      description: السجل غير موجود
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message:
-                type: string
-                example: لا يوجد سجل بهذا المعرف
+    Ok: { description: OK }
+    Created: { description: Created }
+    Deleted: { description: Deleted }
+    Unauthenticated: { description: Unauthenticated }
+    Forbidden: { description: Forbidden }
+    NotFound: { description: Not found }
     ValidationError:
-      description: خطأ في التحقق من صحة البيانات
+      description: Validation error
       content:
         application/json:
           schema:
             type: object
             properties:
-              message:
-                type: string
-                example: The given data was invalid.
+              message: { type: string }
               errors:
                 type: object
                 additionalProperties:
                   type: array
-                  items:
-                    type: string
-
+                  items: { type: string }
   schemas:
-    Pagination:
+    AnyJson: { type: object, additionalProperties: true }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: superadmin@example.com }
+        password: { type: string, example: ChangeMe123! }
+        device_name: { type: string, example: bruno }
+    RegisterRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string, nullable: true }
+        national_id: { type: string, nullable: true }
+        passport_no: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+    LoginResponse:
       type: object
       properties:
-        current_page:
-          type: integer
-        last_page:
-          type: integer
-        per_page:
-          type: integer
-        total:
-          type: integer
-
-    Supplier:
+        message: { type: string }
+        user: { $ref: '#/components/schemas/AnyJson' }
+        token: { type: string }
+    PartyRequest:
       type: object
+      required: [name]
       properties:
-        id:
-          type: integer
-        name:
-          type: string
-        phone:
-          type: string
-          nullable: true
-        email:
-          type: string
-          nullable: true
-        address:
-          type: string
-          nullable: true
-        notes:
-          type: string
-          nullable: true
-        batches_count:
-          type: integer
-        cars_count:
-          type: integer
-        created_at:
-          type: string
-          format: date-time
-
-    Car:
-      type: object
-      properties:
-        id:
-          type: integer
-        batch_id:
-          type: integer
-          nullable: true
-          description: مرئي فقط لمن يملك صلاحية suppliers.view
-        supplier_id:
-          type: integer
-          nullable: true
-        brand:
-          type: string
-        model:
-          type: string
-        finition:
-          type: string
-          nullable: true
-        manufacture_year:
-          type: integer
-        color:
-          type: string
-          nullable: true
-        vin:
-          type: string
-          nullable: true
-        foreign_purchase_price:
-          type: number
-          nullable: true
-          description: مرئي فقط لمن يملك صلاحية cars.view_cost (super-admin)
-        sale_price:
-          type: number
-        status:
-          type: string
-          enum: [available, reserved, shipping, arrived, delivered, sold]
-        is_sold:
-          type: boolean
-
-    Customer:
-      type: object
-      properties:
-        id:
-          type: integer
-        user_id:
-          type: integer
-          nullable: true
-        agent_id:
-          type: integer
-          nullable: true
-        name:
-          type: string
-        phone:
-          type: string
-          nullable: true
-        email:
-          type: string
-          nullable: true
-        national_id:
-          type: string
-          nullable: true
-        passport_no:
-          type: string
-          nullable: true
-        address:
-          type: string
-          nullable: true
-
-    CustomerDocument:
-      type: object
-      properties:
-        id:
-          type: integer
-        customer_id:
-          type: integer
-        title:
-          type: string
-        file_type:
-          type: string
-        file_size:
-          type: string
-        url:
-          type: string
-          format: uri
-        uploaded_by:
-          type: integer
-        uploader:
-          type: object
+        name: { type: string }
+        phone: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        address: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+    ServiceProviderRequest:
+      allOf:
+        - $ref: '#/components/schemas/PartyRequest'
+        - type: object
+          required: [provider_type]
           properties:
-            id:
-              type: integer
-            name:
-              type: string
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-
-    Agent:
+            provider_type: { type: string }
+    ContactRequest:
+      type: object
+      required: [name, whatsapp_number]
+      properties:
+        name: { type: string }
+        whatsapp_number: { type: string, example: "+213 555 12 34 56" }
+        address: { type: string, nullable: true }
+    BatchRequest:
+      type: object
+      required: [supplier_id]
+      properties:
+        supplier_id: { type: integer }
+        purchase_date: { type: string, format: date, nullable: true }
+        status: { type: string, enum: [partial, fully_paid], nullable: true }
+        notes: { type: string, nullable: true }
+    CarRequest:
+      type: object
+      required: [batch_id, supplier_id, brand, model, manufacture_year, foreign_purchase_price, sale_price]
+      properties:
+        batch_id: { type: integer }
+        supplier_id: { type: integer }
+        container_opener_id: { type: integer, nullable: true }
+        brand: { type: string }
+        model: { type: string }
+        finition: { type: string, nullable: true }
+        manufacture_year: { type: integer }
+        color: { type: string, nullable: true }
+        vin: { type: string, nullable: true }
+        foreign_purchase_price: { type: number }
+        shipping_cost: { type: number, nullable: true }
+        sale_price: { type: number }
+        tracking_number: { type: string, nullable: true }
+        container_no: { type: string, nullable: true }
+        shipping_date: { type: string, format: date, nullable: true }
+        arrival_date: { type: string, format: date, nullable: true }
+        delivery_date: { type: string, format: date, nullable: true }
+        status: { type: string, enum: [available, shipping, in_show_room, delivered, sold], nullable: true }
+        notes: { type: string, nullable: true }
+    CustomerRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        phone: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        national_id: { type: string, nullable: true }
+        passport_no: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        agent_id: { type: integer, nullable: true }
+    AgentRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string }
+        phone: { type: string, nullable: true }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        is_active: { type: boolean }
+        address: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+    OrderRequest:
+      type: object
+      required: [customer_id, car_id]
+      properties:
+        customer_id: { type: integer }
+        car_id: { type: integer }
+        agent_id: { type: integer, nullable: true }
+        paid_amount: { type: number, nullable: true }
+        purchase_date: { type: string, format: date, nullable: true }
+        notes: { type: string, nullable: true }
+    CustomerPaymentRequest:
+      type: object
+      required: [order_id, customer_id, amount, payment_date]
+      properties:
+        order_id: { type: integer }
+        customer_id: { type: integer }
+        amount: { type: number }
+        agent_id: { type: integer, nullable: true }
+        attachment: { type: string, nullable: true }
+        payment_date: { type: string, format: date }
+        notes: { type: string, nullable: true }
+    AgentTransactionRequest:
+      type: object
+      required: [agent_id, direction, amount, transaction_date, notes]
+      properties:
+        agent_id: { type: integer }
+        direction: { type: string, enum: [in, out] }
+        amount: { type: number }
+        transaction_date: { type: string, format: date }
+        attachment: { type: string, nullable: true }
+        notes: { type: string }
+    PreOrderCarRequest:
+      type: object
+      required: [supplier_id, brand, model, manufacture_year, price]
+      properties:
+        supplier_id: { type: integer }
+        container_opener_id: { type: integer, nullable: true }
+        brand: { type: string }
+        model: { type: string }
+        finition: { type: string, nullable: true }
+        manufacture_year: { type: integer }
+        color: { type: string, nullable: true }
+        price: { type: number }
+        notes: { type: string, nullable: true }
+    MediaUpdateRequest:
       type: object
       properties:
-        id:
-          type: integer
-        user_id:
-          type: integer
-          nullable: true
-        name:
-          type: string
-        phone:
-          type: string
-          nullable: true
-        email:
-          type: string
-          nullable: true
-        address:
-          type: string
-          nullable: true
-        current_balance:
-          type: number
-
-    Order:
-      type: object
-      properties:
-        id:
-          type: integer
-        order_number:
-          type: string
-        customer_id:
-          type: integer
-        car_id:
-          type: integer
-        agent_id:
-          type: integer
-          nullable: true
-        status:
-          type: string
-          enum: [new, purchased, shipping, arrived_at_port, ready_for_delivery, delivered]
-        status_label:
-          type: string
-        paid_amount:
-          type: number
-        remaining_amount:
-          type: number
-        notes:
-          type: string
-          nullable: true
-
-    CustomerPayment:
-      type: object
-      properties:
-        id:
-          type: integer
-        order_id:
-          type: integer
-        customer_id:
-          type: integer
-        amount:
-          type: number
-        received_by:
-          type: integer
-          description: ID of the system user who received/recorded this payment
-        agent_id:
-          type: integer
-          nullable: true
-        remittance_id:
-          type: integer
-          nullable: true
-        is_remitted:
-          type: boolean
-        payment_date:
-          type: string
-          format: date
-
-    AgentTransaction:
-      type: object
-      properties:
-        id:
-          type: integer
-        agent_id:
-          type: integer
-        direction:
-          type: string
-          enum: [in, out]
-        amount:
-          type: number
-        previous_balence:
-          type: number
-        current_balence:
-          type: number
-        transaction_date:
-          type: string
-          format: date
-        notes:
-          type: string
-          nullable: true
-
-    User:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        email:
-          type: string
-        phone:
-          type: string
-          nullable: true
-        is_active:
-          type: boolean
-        roles:
+        title: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        is_cover: { type: boolean, nullable: true }
+        sort_order: { type: integer, nullable: true }
+        tags:
           type: array
-          items:
-            type: string
+          items: { type: string }
 
-    DashboardStats:
-      type: object
-      properties:
-        customers_count:
-          type: integer
-        suppliers_count:
-          type: integer
-        cars_count:
-          type: integer
-        orders_count:
-          type: integer
-        agents_count:
-          type: integer
-        total_sales:
-          type: number
-        total_commissions:
-          type: number
-        total_purchase_cost:
-          type: number
-          description: super-admin فقط (reports.view_profit)
-        total_expenses:
-          type: number
-          description: super-admin فقط (reports.view_profit)
-        total_profit:
-          type: number
-          description: super-admin فقط (reports.view_profit)
+  requestBodies:
+    JsonParty: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PartyRequest' } } } }
+    JsonServiceProvider: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ServiceProviderRequest' } } } }
+    JsonContact: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContactRequest' } } } }
+    JsonBatch: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BatchRequest' } } } }
+    JsonCar: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CarRequest' } } } }
+    JsonCustomer: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CustomerRequest' } } } }
+    JsonAgent: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AgentRequest' } } } }
+    JsonOrder: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OrderRequest' } } } }
+    JsonCustomerPayment: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CustomerPaymentRequest' } } } }
+    JsonAgentTransaction: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AgentTransactionRequest' } } } }
+    JsonPreOrderCar: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequest' } } } }
+    JsonMediaUpdate: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MediaUpdateRequest' } } } }
+    BatchImport:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [supplier_id, file]
+            properties:
+              supplier_id: { type: integer }
+              container_opener_id: { type: integer, nullable: true }
+              purchase_date: { type: string, format: date, nullable: true }
+              total_cost_foreign: { type: number, nullable: true }
+              notes: { type: string, nullable: true }
+              file: { type: string, format: binary }
+    PreOrderImport:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [supplier_id, file]
+            properties:
+              supplier_id: { type: integer }
+              container_opener_id: { type: integer, nullable: true }
+              notes: { type: string, nullable: true }
+              file: { type: string, format: binary }
+    MediaUpload:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            description: أرسل واحدًا فقط من file أو url.
+            properties:
+              file: { type: string, format: binary, nullable: true }
+              url: { type: string, format: uri, nullable: true }
+              type: { type: string, enum: [image, video], nullable: true }
+              title: { type: string, nullable: true }
+              description: { type: string, nullable: true }
+              is_cover: { type: boolean, nullable: true }
+              sort_order: { type: integer, nullable: true }
+              tags: { type: array, items: { type: string } }
+    Expense:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required: [expense_type, amount, expense_date]
+            properties:
+              car_id: { type: integer, nullable: true }
+              order_id: { type: integer, nullable: true }
+              service_provider_id: { type: integer, nullable: true }
+              expense_type: { type: string }
+              amount: { type: number }
+              attachment: { type: string, format: binary, nullable: true }
+              expense_date: { type: string, format: date }
+              notes: { type: string, nullable: true }
 
 paths:
   /auth/register:
     post:
       tags: [Auth]
-      summary: تسجيل حساب عميل جديد
-      description: ينشئ دائمًا حسابًا بدور customer مع سجل Customer مرتبط.
       security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, email, password, password_confirmation]
-              properties:
-                name:
-                  type: string
-                  example: أحمد محمد
-                email:
-                  type: string
-                  example: ahmed@example.com
-                phone:
-                  type: string
-                  example: "0555123456"
-                password:
-                  type: string
-                  example: password123
-                password_confirmation:
-                  type: string
-                  example: password123
-      responses:
-        '201':
-          description: تم إنشاء الحساب بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user:
-                    $ref: '#/components/schemas/User'
-                  token:
-                    type: string
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+      summary: Register public customer profile
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RegisterRequest' } } } }
+      responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } }
   /auth/login:
     post:
       tags: [Auth]
-      summary: تسجيل الدخول
       security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                  example: superadmin@example.com
-                password:
-                  type: string
-                  example: ChangeMe123!
-                device_name:
-                  type: string
-                  example: web-dashboard
+      summary: Login and get Sanctum token
+      description: ضع سكربت Bruno Post Response `bru.setVar("token", res.body.token);`.
+      x-bruno:
+        postResponseScript: bru.setVar("token", res.body.token);
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } } }
       responses:
-        '200':
-          description: تم تسجيل الدخول بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user:
-                    $ref: '#/components/schemas/User'
-                  token:
-                    type: string
-        '422':
-          description: بيانات الدخول غير صحيحة أو الحساب معطل
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/ValidationError'
-
+        '200': { description: Login success, content: { application/json: { schema: { $ref: '#/components/schemas/LoginResponse' } } } }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /auth/me:
-    get:
-      tags: [Auth]
-      summary: بيانات المستخدم الحالي مع أدواره وصلاحياته
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-
+    get: { tags: [Auth], summary: Current user, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /auth/logout:
-    post:
-      tags: [Auth]
-      summary: تسجيل الخروج (هذا الجهاز فقط)
-      responses:
-        '200':
-          description: تم تسجيل الخروج بنجاح
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-
+    post: { tags: [Auth], summary: Logout current token, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /auth/logout-all:
-    post:
-      tags: [Auth]
-      summary: تسجيل الخروج من جميع الأجهزة
-      responses:
-        '200':
-          description: تم تسجيل الخروج من جميع الأجهزة بنجاح
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-
-  /auth/update-profile:
-    put:
-      tags: [Auth]
-      summary: تعديل بيانات الملف الشخصي للمستخدم
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: أحمد محمد
-                email:
-                  type: string
-                  format: email
-                  example: ahmed@example.com
-                phone:
-                  type: string
-                  example: 0555555555
-      responses:
-        '200':
-          description: تم تحديث بيانات الملف الشخصي بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  user:
-                    $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+    post: { tags: [Auth], summary: Logout all tokens, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /auth/update-password:
-    post:
+    post: &updatePassword
       tags: [Auth]
-      summary: تعديل كلمة مرور المستخدم الحالي
+      summary: Update password
       requestBody:
         required: true
         content:
@@ -604,814 +358,137 @@ paths:
               type: object
               required: [current_password, password, password_confirmation]
               properties:
-                current_password:
-                  type: string
-                  example: "12345678"
-                password:
-                  type: string
-                  minLength: 8
-                  example: newpassword123
-                password_confirmation:
-                  type: string
-                  example: newpassword123
-      responses:
-        '200':
-          description: تم تحديث كلمة المرور بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-    put:
+                current_password: { type: string }
+                password: { type: string, minLength: 8 }
+                password_confirmation: { type: string }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+    put: *updatePassword
+  /auth/update-profile:
+    post: &updateProfile
       tags: [Auth]
-      summary: تعديل كلمة مرور المستخدم الحالي
+      summary: Update profile
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [current_password, password, password_confirmation]
               properties:
-                current_password:
-                  type: string
-                  example: "12345678"
-                password:
-                  type: string
-                  minLength: 8
-                  example: newpassword123
-                password_confirmation:
-                  type: string
-                  example: newpassword123
-      responses:
-        '200':
-          description: تم تحديث كلمة المرور بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string, nullable: true }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+    put: *updateProfile
   /ping:
+    get: { tags: [Auth], summary: Auth ping, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /lookup/customer/{passport_no}:
     get:
-      tags: [Auth]
-      summary: فحص سريع لصحة المصادقة والأدوار
-      responses:
-        '200':
-          description: pong
-
+      tags: [Public]
+      security: []
+      summary: Public customer lookup by passport path param
+      parameters: [{ name: passport_no, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+  /lookup/customer:
+    get:
+      tags: [Public]
+      security: []
+      summary: Public customer lookup by query
+      parameters: [{ name: passport_no, in: query, schema: { type: string } }]
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+  /cars/available:
+    get:
+      tags: [Public, Cars]
+      security: []
+      summary: Public available cars catalogue
+      parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }]
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
   /suppliers:
-    get:
-      tags: [Suppliers]
-      summary: قائمة الموردين
-      parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/PerPage'
-        - $ref: '#/components/parameters/Page'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Supplier'
-                  meta:
-                    $ref: '#/components/schemas/Pagination'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      tags: [Suppliers]
-      summary: إضافة مورد جديد
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name:
-                  type: string
-                phone:
-                  type: string
-                email:
-                  type: string
-                address:
-                  type: string
-                notes:
-                  type: string
-      responses:
-        '201':
-          description: تم إضافة المورد بنجاح
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+    get: { tags: [Suppliers], summary: List suppliers, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }, { $ref: '#/components/parameters/Page' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Suppliers], summary: Create supplier, requestBody: { $ref: '#/components/requestBodies/JsonParty' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /suppliers/{supplier}:
-    parameters:
-      - name: supplier
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Suppliers]
-      summary: عرض مورد مع سياراته وطلباته ودفعاته
-      responses:
-        '200':
-          description: نجح
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      tags: [Suppliers]
-      summary: تحديث بيانات مورد
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                phone:
-                  type: string
-                email:
-                  type: string
-                address:
-                  type: string
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Suppliers]
-      summary: حذف مورد (يُرفض إن وُجدت سيارات أو دفعات مرتبطة)
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود سجلات مرتبطة
-
+    parameters: [{ name: supplier, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Suppliers], summary: Show supplier, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Suppliers], summary: Update supplier, requestBody: { $ref: '#/components/requestBodies/JsonParty' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Suppliers], summary: Update supplier, requestBody: { $ref: '#/components/requestBodies/JsonParty' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Suppliers], summary: Delete supplier, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /supplier-payments:
-    get:
-      tags: [SupplierPayments]
-      summary: قائمة دفعات الموردين
-      parameters:
-        - name: supplier_id
-          in: query
-          schema:
-            type: integer
-        - name: batch_id
-          in: query
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
+    get: { tags: [SupplierPayments], summary: List supplier payments, parameters: [{ name: supplier_id, in: query, schema: { type: integer } }, { name: batch_id, in: query, schema: { type: integer } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [SupplierPayments]
-      summary: تسجيل دفعة لمورد على دفعة استيراد محددة
-      description: |
-        ينشئ تلقائيًا حركة خزينة (out)، ويعيد حساب total_paid_amount_foreign
-        للدفعة، ويرقّي حالتها من partial إلى fully_paid عند اكتمال السداد.
+      summary: Create supplier payment and distribute it
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [batch_id, supplier_id, amount_foreign, exchange_rate, payment_date]
+              required: [supplier_id, amount_foreign, exchange_rate, payment_date]
               properties:
-                batch_id:
-                  type: integer
-                supplier_id:
-                  type: integer
-                amount_foreign:
-                  type: number
-                exchange_rate:
-                  type: number
-                amount_local:
-                  type: number
-                  description: يُحسب تلقائيًا إن لم يُرسَل
-                payment_date:
-                  type: string
-                  format: date
-                notes:
-                  type: string
-      responses:
-        '201':
-          description: تم تسجيل دفعة المورد بنجاح
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                supplier_id: { type: integer }
+                batch_id: { type: integer, nullable: true }
+                amount_foreign: { type: number }
+                exchange_rate: { type: number }
+                payment_date: { type: string, format: date }
+                notes: { type: string, nullable: true }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /supplier-payments/{supplier_payment}:
-    parameters:
-      - name: supplier_payment
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [SupplierPayments]
-      summary: عرض دفعة مورد
-      responses:
-        '200':
-          description: نجح
-    patch:
-      tags: [SupplierPayments]
-      summary: تعديل دفعة مورد (يُعيد حساب إجمالي الدفعة وخزينة الشركة)
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [SupplierPayments]
-      summary: حذف دفعة مورد (يُسجّل حركة خزينة عكسية)
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف إن كانت الدفعة مُحوَّلة بالفعل
-
-  /batches/import:
-    post:
-      tags: [Batches]
-      summary: استيراد دفعة استيراد وسيارات من ملف إكسل
-      description: ينشئ دفعة جديدة ويستورد كل السيارات المرتبطة بها والعملاء والطلبات من ملف إكسل المرفوع.
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [supplier_id, file]
-              properties:
-                supplier_id:
-                  type: integer
-                  description: معرف المورد
-                  example: 1
-                container_opener_id:
-                  type: integer
-                  description: معرف جهة فتح الحاوية
-                  nullable: true
-                  example: 1
-                exchange_rate:
-                  type: number
-                  description: سعر الصرف الحالي (لتحويل التكلفة الإجمالية للعملة المحلية)
-                  example: 3.75
-                purchase_date:
-                  type: string
-                  format: date
-                  description: تاريخ الشراء
-                  example: "2026-07-03"
-                total_cost_foreign:
-                  type: number
-                  description: التكلفة الإجمالية بالعملة الأجنبية
-                  example: 15000.00
-                notes:
-                  type: string
-                  description: ملاحظات إضافية
-                  example: "ملاحظات حول الدفعة المستوردة"
-                file:
-                  type: string
-                  format: binary
-                  description: ملف إكسل (xlsx, xls, csv) يحتوي على قائمة السيارات
-      responses:
-        '201':
-          description: تم استيراد دفعة الاستيراد والسيارات بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "تم استيراد دفعة الاستيراد والسيارات بنجاح"
-                  data:
-                    type: object
-                    properties:
-                      batch:
-                        type: object
-                        description: تفاصيل الدفعة التي تم إنشاؤها
-                      created:
-                        type: integer
-                        description: عدد السيارات التي تم إنشاؤها بنجاح
-                        example: 5
-                      skipped:
-                        type: integer
-                        description: عدد الأسطر التي تم تخطيها بسبب أخطاء
-                        example: 1
-                      errors:
-                        type: array
-                        description: قائمة الأخطاء بالتفصيل مع رقم السطر
-                        items:
-                          type: object
-                          properties:
-                            row:
-                              type: integer
-                              example: 3
-                            errors:
-                              type: array
-                              items:
-                                type: string
-                              example: ["رقم الهيكل (VIN) مكرر"]
-        '422':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthenticated'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+    parameters: [{ name: supplier_payment, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [SupplierPayments], summary: Show supplier payment, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [SupplierPayments], summary: Update supplier payment, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [SupplierPayments], summary: Update supplier payment, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [SupplierPayments], summary: Delete supplier payment, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /batches:
-    get:
-      tags: [Batches]
-      summary: قائمة دفعات الاستيراد
-      parameters:
-        - name: supplier_id
-          in: query
-          schema:
-            type: integer
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [partial, fully_paid]
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-    post:
-      tags: [Batches]
-      summary: إنشاء دفعة استيراد جديدة
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [supplier_id, purchase_date, exchange_rate]
-              properties:
-                supplier_id:
-                  type: integer
-                purchase_date:
-                  type: string
-                  format: date
-                exchange_rate:
-                  type: number
-                notes:
-                  type: string
-      responses:
-        '201':
-          description: تم إنشاء دفعة الاستيراد بنجاح
-
+    get: { tags: [Batches], summary: List batches, parameters: [{ $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Batches], summary: Create batch, requestBody: { $ref: '#/components/requestBodies/JsonBatch' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /batches/import:
+    post: { tags: [Batches], summary: Import batch cars from xlsx/xls/csv, requestBody: { $ref: '#/components/requestBodies/BatchImport' }, responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } } }
   /batches/{batch}:
-    parameters:
-      - name: batch
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Batches]
-      summary: عرض دفعة استيراد مع سياراتها ودفعاتها
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [Batches]
-      summary: تحديث دفعة استيراد (يشمل تحديث الحالة يدويًا)
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum: [partial, fully_paid]
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Batches]
-      summary: حذف دفعة استيراد
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود سيارات أو دفعات مرتبطة
-
-  /cars/table:
-    get:
-      tags: [Cars]
-      summary: جدول السيارات المسطّح بالأعمدة المحددة (super-admin فقط - cars.view_cost)
-      description: |
-        صف واحد لكل سيارة بالأعمدة بالضبط: brand, model, finition,
-        manufacture_year, color, vin, foreign_purchase_price,
-        tracking_number, customer_full_name, customer_passport_no,
-        customer_national_id, first_owner_name, first_owner_passport_no,
-        first_owner_national_id, current_owner_name, current_owner_passport_no,
-        current_owner_national_id, shipping_price, arrival_date.
-
-        هذا تقرير تكلفة بالكامل (يحتوي سعر الشراء وتكلفة الشحن)، لذا يتطلب
-        صلاحية cars.view_cost كاملة وليس suppliers.view العامة، خلافًا
-        لـ GET /cars المعتاد الذي يُظهر بيانات مُخفّفة حسب الصلاحية.
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [available, reserved, shipping, arrived, delivered, sold]
-        - name: brand
-          in: query
-          schema:
-            type: string
-        - name: batch_id
-          in: query
-          schema:
-            type: integer
-        - name: supplier_id
-          in: query
-          schema:
-            type: integer
-        - name: vin
-          in: query
-          schema:
-            type: string
-        - $ref: '#/components/parameters/SearchParam'
-        - name: arrival_date_from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: arrival_date_to
-          in: query
-          schema:
-            type: string
-            format: date
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        brand:
-                          type: string
-                        model:
-                          type: string
-                        finition:
-                          type: string
-                          nullable: true
-                        manufacture_year:
-                          type: integer
-                        color:
-                          type: string
-                          nullable: true
-                        vin:
-                          type: string
-                          nullable: true
-                        foreign_purchase_price:
-                          type: number
-                        tracking_number:
-                          type: string
-                          nullable: true
-                        customer_full_name:
-                          type: string
-                          nullable: true
-                          description: فارغ إن لم تكن السيارة مرتبطة بطلب بعد
-                        customer_passport_no:
-                          type: string
-                          nullable: true
-                        customer_national_id:
-                          type: string
-                          nullable: true
-                        first_owner_name:
-                          type: string
-                          nullable: true
-                        first_owner_passport_no:
-                          type: string
-                          nullable: true
-                        first_owner_national_id:
-                          type: string
-                          nullable: true
-                        current_owner_name:
-                          type: string
-                          nullable: true
-                        current_owner_passport_no:
-                          type: string
-                          nullable: true
-                        current_owner_national_id:
-                          type: string
-                          nullable: true
-                        shipping_price:
-                          type: number
-                          description: مجموع تكاليف الشحن المسجّلة على السيارة في car_expenses
-                        arrival_date:
-                          type: string
-                          format: date
-                          nullable: true
-                  meta:
-                    $ref: '#/components/schemas/Pagination'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /cars/table/export:
-    get:
-      tags: [Cars]
-      summary: تصدير جدول السيارات بصيغة Excel (.xlsx) بنفس الأعمدة والفلاتر
-      description: |
-        يستخدم نفس الفلاتر المتاحة في GET /cars/table، ويُرجع كل النتائج
-        المطابقة دفعة واحدة (بدون pagination)، بصيغة .xlsx جاهزة للتحميل.
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [available, reserved, shipping, arrived, delivered, sold]
-        - name: brand
-          in: query
-          schema:
-            type: string
-        - name: batch_id
-          in: query
-          schema:
-            type: integer
-        - name: supplier_id
-          in: query
-          schema:
-            type: integer
-        - name: vin
-          in: query
-          schema:
-            type: string
-        - $ref: '#/components/parameters/SearchParam'
-        - name: arrival_date_from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: arrival_date_to
-          in: query
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: ملف Excel جاهز للتحميل
-          content:
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+    parameters: [{ name: batch, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Batches], summary: Show batch, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Batches], summary: Update batch, requestBody: { $ref: '#/components/requestBodies/JsonBatch' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Batches], summary: Update batch, requestBody: { $ref: '#/components/requestBodies/JsonBatch' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Batches], summary: Delete batch, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /cars:
-    get:
-      tags: [Cars]
-      summary: قائمة السيارات (كتالوج للعميل/الوكيل، بيانات كاملة للموظفين)
-      description: |
-        - super-admin: يرى كل البيانات بما فيها التكلفة والربح.
-        - admin: يرى كل البيانات التشغيلية (المورد...) لكن بدون التكلفة.
-        - agent/customer: يرى فقط العلامة/الموديل/سعر البيع، والسيارات غير المباعة فقط.
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [available, reserved, shipping, arrived, delivered, sold]
-        - name: brand
-          in: query
-          schema:
-            type: string
-        - name: vin
-          in: query
-          schema:
-            type: string
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Car'
-    post:
-      tags: [Cars]
-      summary: إضافة سيارة جديدة
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [batch_id, supplier_id, brand, model, manufacture_year, foreign_purchase_price, sale_price]
-              properties:
-                batch_id:
-                  type: integer
-                supplier_id:
-                  type: integer
-                container_opener_id:
-                  type: integer
-                brand:
-                  type: string
-                model:
-                  type: string
-                manufacture_year:
-                  type: integer
-                color:
-                  type: string
-                vin:
-                  type: string
-                foreign_purchase_price:
-                  type: number
-                sale_price:
-                  type: number
-      responses:
-        '201':
-          description: تم إضافة السيارة بنجاح
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+    get: { tags: [Cars], summary: List cars, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Cars], summary: Create car, requestBody: { $ref: '#/components/requestBodies/JsonCar' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /cars/table:
+    get: { tags: [Cars], summary: Flat cars table report, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /cars/table/export:
+    get: { tags: [Cars], summary: Export flat cars table, responses: { '200': { description: File download } } }
   /cars/{car}:
-    parameters:
-      - name: car
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Cars]
-      summary: عرض سيارة
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Car'
-    put:
-      tags: [Cars]
-      summary: تحديث بيانات سيارة (يشمل تغيير الحالة)
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum: [available, reserved, shipping, arrived, delivered, sold]
-                sale_price:
-                  type: number
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Cars]
-      summary: حذف سيارة
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود طلب مرتبط بها
-
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Cars], summary: Show car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Cars], summary: Update car, requestBody: { $ref: '#/components/requestBodies/JsonCar' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Cars], summary: Update car, requestBody: { $ref: '#/components/requestBodies/JsonCar' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Cars], summary: Delete car, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /cars/{car}/expenses:
-    parameters:
-      - name: car
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Cars]
-      summary: قائمة تكاليف السيارة (super-admin فقط - cars.view_cost)
-      responses:
-        '200':
-          description: نجح
-        '403':
-          description: متاحة فقط لمن يملك صلاحية cars.view_cost
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Cars], summary: List car expenses, responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [Cars]
-      summary: إضافة تكلفة على سيارة (شحن، رسوم، إصلاح...)
+      summary: Add car expense
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [expense_type, foreign_amount, local_amount]
+              required: [expense_type, local_amount]
               properties:
-                expense_type:
-                  type: string
-                foreign_amount:
-                  type: number
-                local_amount:
-                  type: number
-                notes:
-                  type: string
-      responses:
-        '201':
-          description: تم إضافة المصروف بنجاح
-
+                expense_type: { type: string }
+                foreign_amount: { type: number, nullable: true }
+                local_amount: { type: number }
+                notes: { type: string, nullable: true }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /cars/{car}/ownership-history:
-    parameters:
-      - name: car
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Cars]
-      summary: تاريخ مالكي السيارة (الطلبات والعملاء المرتبطين بها)
-      description: يعرض قائمة بجميع الطلبات والعملاء الذين ارتبطوا بالسيارة عبر الزمن مرتبة تصاعدياً.
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        order_id:
-                          type: integer
-                        order_number:
-                          type: string
-                        status:
-                          type: string
-                        status_label:
-                          type: string
-                        purchase_date:
-                          type: string
-                          format: date
-                          nullable: true
-                        delivery_date:
-                          type: string
-                          format: date
-                          nullable: true
-                        customer:
-                          $ref: '#/components/schemas/Customer'
-                        created_at:
-                          type: string
-                          format: date-time
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Cars], summary: Car ownership history, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /cars/{car}/documents:
-    parameters:
-      - name: car
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Documents]
-      summary: قائمة وثائق السيارة
-      responses:
-        '200':
-          description: نجح
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Documents], summary: List car documents, responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [Documents]
-      summary: إضافة وثيقة لسيارة
+      summary: Add car document
       requestBody:
         required: true
         content:
@@ -1420,585 +497,107 @@ paths:
               type: object
               required: [title, file_path]
               properties:
-                title:
-                  type: string
-                file_path:
-                  type: string
-      responses:
-        '201':
-          description: تم إضافة الوثيقة بنجاح
-
+                title: { type: string }
+                file_path: { type: string }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /cars/{car}/documents/{document}:
-    parameters:
-      - name: car
-        in: path
-        required: true
-        schema:
-          type: integer
-      - name: document
-        in: path
-        required: true
-        schema:
-          type: integer
-    delete:
-      tags: [Documents]
-      summary: حذف وثيقة من سيارة
-      responses:
-        '200':
-          description: تم حذف الوثيقة بنجاح
-        '404':
-          description: الوثيقة لا تعود لهذه السيارة
-
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }, { name: document, in: path, required: true, schema: { type: integer } }]
+    delete: { tags: [Documents], summary: Delete car document, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /cars/{car}/media:
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [CarMedia], summary: List media for a car, parameters: [{ name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string }, description: Comma separated tag names }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [CarMedia], summary: Upload/link media to car, requestBody: { $ref: '#/components/requestBodies/MediaUpload' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /car-media/search:
+    get: { tags: [CarMedia], summary: Search car media globally, parameters: [{ name: car_name, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /car-media/{carMedia}:
+    parameters: [{ name: carMedia, in: path, required: true, schema: { type: integer } }]
+    put: { tags: [CarMedia], summary: Update car media metadata/tags, requestBody: { $ref: '#/components/requestBodies/JsonMediaUpdate' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [CarMedia], summary: Delete car media, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /general-media:
+    get: { tags: [GeneralMedia], summary: List general media, parameters: [{ name: q, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [GeneralMedia], summary: Upload/link general media, requestBody: { $ref: '#/components/requestBodies/MediaUpload' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /general-media/{generalMedia}:
+    parameters: [{ name: generalMedia, in: path, required: true, schema: { type: integer } }]
+    put: { tags: [GeneralMedia], summary: Update general media metadata/tags, requestBody: { $ref: '#/components/requestBodies/JsonMediaUpdate' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [GeneralMedia], summary: Delete general media, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /tags:
+    get: { tags: [Tags], summary: Autocomplete/list tags, parameters: [{ name: q, in: query, schema: { type: string } }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /container-openers:
-    get:
-      tags: [ContainerOpeners]
-      summary: قائمة جهات فتح الحاويات
-      parameters:
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-    post:
-      tags: [ContainerOpeners]
-      summary: إضافة جهة فتح حاويات
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name:
-                  type: string
-                phone:
-                  type: string
-                nif:
-                  type: string
-      responses:
-        '201':
-          description: تم الإضافة بنجاح
-
+    get: { tags: [ContainerOpeners], summary: List container openers, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [ContainerOpeners], summary: Create container opener, requestBody: { $ref: '#/components/requestBodies/JsonParty' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /container-openers/{container_opener}:
-    parameters:
-      - name: container_opener
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [ContainerOpeners]
-      summary: عرض جهة فتح حاويات
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [ContainerOpeners]
-      summary: تحديث جهة فتح حاويات
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [ContainerOpeners]
-      summary: حذف جهة فتح حاويات
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-
+    parameters: [{ name: container_opener, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [ContainerOpeners], summary: Show container opener, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [ContainerOpeners], summary: Update container opener, requestBody: { $ref: '#/components/requestBodies/JsonParty' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [ContainerOpeners], summary: Update container opener, requestBody: { $ref: '#/components/requestBodies/JsonParty' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [ContainerOpeners], summary: Delete container opener, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /service-providers:
-    get:
-      tags: [ServiceProviders]
-      summary: قائمة مزودي الخدمات
-      parameters:
-        - name: provider_type
-          in: query
-          schema:
-            type: string
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-    post:
-      tags: [ServiceProviders]
-      summary: إضافة مزود خدمة
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, provider_type]
-              properties:
-                name:
-                  type: string
-                provider_type:
-                  type: string
-                phone:
-                  type: string
-      responses:
-        '201':
-          description: تم الإضافة بنجاح
-
+    get: { tags: [ServiceProviders], summary: List service providers, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [ServiceProviders], summary: Create service provider, requestBody: { $ref: '#/components/requestBodies/JsonServiceProvider' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /service-providers/{service_provider}:
-    parameters:
-      - name: service_provider
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [ServiceProviders]
-      summary: عرض مزود خدمة
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [ServiceProviders]
-      summary: تحديث مزود خدمة
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [ServiceProviders]
-      summary: حذف مزود خدمة
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-
+    parameters: [{ name: service_provider, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [ServiceProviders], summary: Show service provider, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [ServiceProviders], summary: Update service provider, requestBody: { $ref: '#/components/requestBodies/JsonServiceProvider' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [ServiceProviders], summary: Update service provider, requestBody: { $ref: '#/components/requestBodies/JsonServiceProvider' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [ServiceProviders], summary: Delete service provider, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /customers:
-    get:
-      tags: [Customers]
-      summary: قائمة العملاء (admin يرى الكل، agent يرى عملاءه فقط)
-      parameters:
-        - name: agent_id
-          in: query
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Customer'
-    post:
-      tags: [Customers]
-      summary: إضافة عميل (وكيل ينشئ عميلًا يُربط تلقائيًا به)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name:
-                  type: string
-                phone:
-                  type: string
-                email:
-                  type: string
-                national_id:
-                  type: string
-                agent_id:
-                  type: integer
-                  description: admin فقط - الوكيل يُربط تلقائيًا بنفسه
-      responses:
-        '201':
-          description: تم إضافة العميل بنجاح
-
+    get: { tags: [Customers], summary: List customers, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Customers], summary: Create customer, requestBody: { $ref: '#/components/requestBodies/JsonCustomer' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /customers/{customer}:
-    parameters:
-      - name: customer
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Customers]
-      summary: عرض عميل مع طلباته ودفعاته
-      responses:
-        '200':
-          description: نجح
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    put:
-      tags: [Customers]
-      summary: تحديث بيانات عميل
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Customers]
-      summary: حذف عميل
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود طلبات مرتبطة
-
+    parameters: [{ name: customer, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Customers], summary: Show customer, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Customers], summary: Update customer, requestBody: { $ref: '#/components/requestBodies/JsonCustomer' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Customers], summary: Update customer, requestBody: { $ref: '#/components/requestBodies/JsonCustomer' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Customers], summary: Delete customer, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /customers/{customer}/documents:
-    parameters:
-      - name: customer
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Customers]
-      summary: قائمة مستندات العميل
-      description: عرض جميع المستندات والملفات المرفوعة الخاصة بملف العميل.
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CustomerDocument'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+    parameters: [{ name: customer, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Customers], summary: List customer documents, responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [Customers]
-      summary: رفع مستندات لملف العميل (تحميل متعدد)
-      description: رفع ملف أو عدة ملفات (حتى 10 ملفات) وإضافتها إلى مستندات العميل.
+      summary: Upload customer documents
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
-              required: [files]
               properties:
-                files:
+                documents:
                   type: array
-                  description: قائمة الملفات المراد رفعها (الحد الأقصى للملف الواحد 10 ميجابايت)
-                  items:
-                    type: string
-                    format: binary
-                titles:
-                  type: array
-                  description: عناوين اختيارية للملفات بنفس الترتيب
-                  items:
-                    type: string
-      responses:
-        '201':
-          description: تم الرفع بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CustomerDocument'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+                  items: { type: string, format: binary }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /customers/{customer}/documents/{document}:
-    parameters:
-      - name: customer
-        in: path
-        required: true
-        schema:
-          type: integer
-      - name: document
-        in: path
-        required: true
-        schema:
-          type: integer
-    delete:
-      tags: [Customers]
-      summary: حذف مستند من ملف العميل
-      description: حذف مستند محدد من ملف العميل وحذف الملف الفيزيائي من السيرفر.
-      responses:
-        '200':
-          description: تم حذف الملف بنجاح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: تم حذف الملف بنجاح
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: الملف غير موجود أو لا ينتمي للعميل المحدد
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: الملف لا ينتمي لهذا العميل
-
+    parameters: [{ name: customer, in: path, required: true, schema: { type: integer } }, { name: document, in: path, required: true, schema: { type: integer } }]
+    delete: { tags: [Customers], summary: Delete customer document, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /agents:
-    get:
-      tags: [Agents]
-      summary: قائمة الوكلاء (admin فقط)
-      parameters:
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Agent'
-    post:
-      tags: [Agents]
-      summary: إضافة وكيل
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name]
-              properties:
-                name:
-                  type: string
-                phone:
-                  type: string
-                email:
-                  type: string
-                user_id:
-                  type: integer
-                  description: لربط حساب مستخدم موجود بهذا الوكيل
-      responses:
-        '201':
-          description: تم إضافة الوكيل بنجاح
-
+    get: { tags: [Agents], summary: List agents, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Agents], summary: Create agent with user account, requestBody: { $ref: '#/components/requestBodies/JsonAgent' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /agents/{agent}:
-    parameters:
-      - name: agent
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Agents]
-      summary: عرض وكيل (الوكيل نفسه يرى ملفه الشخصي)
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [Agents]
-      summary: تحديث بيانات وكيل
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Agents]
-      summary: حذف وكيل
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود عملاء أو طلبات مرتبطة
-
+    parameters: [{ name: agent, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Agents], summary: Show agent, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Agents], summary: Update agent, requestBody: { $ref: '#/components/requestBodies/JsonAgent' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Agents], summary: Update agent, requestBody: { $ref: '#/components/requestBodies/JsonAgent' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Agents], summary: Delete agent, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /agents/{agent}/customers:
-    parameters:
-      - name: agent
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Agents]
-      summary: قائمة العملاء التابعين لوكيل (مطلوب صريح في المتطلبات)
-      parameters:
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-
+    parameters: [{ name: agent, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Agents], summary: Agent customers, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /agents/{agent}/statement:
-    parameters:
-      - name: agent
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Agents]
-      summary: كشف حساب الوكيل الكامل (مطلوب صريح في المتطلبات)
-      parameters:
-        - name: date_from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: date_to
-          in: query
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  agent:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      name:
-                        type: string
-                      current_balance:
-                        type: number
-                  statement:
-                    type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/AgentTransaction'
-
+    parameters: [{ name: agent, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Agents], summary: Agent statement, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /orders:
-    get:
-      tags: [Orders]
-      summary: قائمة الطلبات (admin يرى الكل، agent المرتبطة به، customer الخاصة به)
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [new, purchased, shipping, arrived_at_port, ready_for_delivery, delivered]
-        - name: customer_id
-          in: query
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Order'
-    post:
-      tags: [Orders]
-      summary: إنشاء طلب جديد (يربط العميل بالسيارة، يجعل السيارة reserved)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [customer_id, car_id]
-              properties:
-                customer_id:
-                  type: integer
-                car_id:
-                  type: integer
-                agent_id:
-                  type: integer
-                purchase_date:
-                  type: string
-                  format: date
-                notes:
-                  type: string
-      responses:
-        '201':
-          description: تم إنشاء الطلب بنجاح
-        '422':
-          description: السيارة غير متاحة أو مرتبطة بطلب آخر
-
+    get: { tags: [Orders], summary: List orders, parameters: [{ $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Orders], summary: Create order, requestBody: { $ref: '#/components/requestBodies/JsonOrder' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /orders/{order}:
-    parameters:
-      - name: order
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Orders]
-      summary: عرض طلب
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Order'
-    put:
-      tags: [Orders]
-      summary: تحديث الحقول العامة للطلب (ليس الحالة)
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                agent_id:
-                  type: integer
-                notes:
-                  type: string
-      responses:
-        '200':
-          description: تم تحديث الطلب بنجاح
-    delete:
-      tags: [Orders]
-      summary: حذف طلب (يحرر السيارة لتصبح available)
-      responses:
-        '200':
-          description: تم حذف الطلب بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود دفعات مسجلة
-
+    parameters: [{ name: order, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Orders], summary: Show order, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Orders], summary: Update order notes/agent, requestBody: { $ref: '#/components/requestBodies/JsonOrder' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Orders], summary: Update order notes/agent, requestBody: { $ref: '#/components/requestBodies/JsonOrder' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Orders], summary: Delete order, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /orders/{order}/status:
-    parameters:
-      - name: order
-        in: path
-        required: true
-        schema:
-          type: integer
+    parameters: [{ name: order, in: path, required: true, schema: { type: integer } }]
     patch:
       tags: [Orders]
-      summary: تغيير حالة الطلب (تسلسل صارم خطوة بخطوة فقط)
-      description: |
-        التسلسل الإلزامي: new → purchased → shipping → arrived_at_port →
-        ready_for_delivery → delivered. لا يمكن تخطي خطوة أو الرجوع للخلف.
+      summary: Change order status forward only
       requestBody:
         required: true
         content:
@@ -2007,289 +606,84 @@ paths:
               type: object
               required: [status]
               properties:
-                status:
-                  type: string
-                  enum: [purchased, shipping, arrived_at_port, ready_for_delivery, delivered]
-                date:
-                  type: string
-                  format: date
-      responses:
-        '200':
-          description: تم تحديث حالة الطلب بنجاح
-        '422':
-          description: لا يمكن تغيير الحالة مباشرة بدون اتباع التسلسل
-
+                status: { type: string, enum: [purchased, shipping, arrived_at_port, ready_for_delivery, delivered] }
+                date: { type: string, format: date, nullable: true }
+      responses: { '200': { $ref: '#/components/responses/Ok' }, '422': { $ref: '#/components/responses/ValidationError' } }
   /customer-payments:
-    get:
-      tags: [CustomerPayments]
-      summary: قائمة دفعات العملاء
-      parameters:
-        - name: order_id
-          in: query
-          schema:
-            type: integer
-        - name: is_remitted
-          in: query
-          schema:
-            type: boolean
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CustomerPayment'
+    get: { tags: [CustomerPayments], summary: List customer payments, parameters: [{ name: order_id, in: query, schema: { type: integer } }, { name: is_remitted, in: query, schema: { type: boolean } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [CustomerPayments], summary: Create customer payment, requestBody: { $ref: '#/components/requestBodies/JsonCustomerPayment' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /customer-payments/remit:
     post:
       tags: [CustomerPayments]
-      summary: تسجيل دفعة عميل على طلب
-      description: |
-        يتم تحديد مسار الدفعة المالي بناءً على وجود `agent_id`:
-        - في حال عدم تمرير وكيل (agent_id = null): تدخل خزينة الشركة مباشرة (treasury "in").
-        - في حال تمرير وكيل (agent_id): تُسجَّل كدَين على الوكيل (agent_transactions "out") حتى يتم تحويلها فعليًا عبر POST /customer-payments/{id}/remit.
-        
-        حقل `received_by` ينشأ تلقائيًا ويتم تعيينه إلى معرّف المستخدم الحالي للنظام.
+      summary: Agent remits balance to company treasury
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [order_id, customer_id, amount, payment_date]
+              required: [amount]
               properties:
-                order_id:
-                  type: integer
-                customer_id:
-                  type: integer
-                amount:
-                  type: number
-                agent_id:
-                  type: integer
-                  description: مطلوب إن كان استلام الدفعة بواسطة وكيل
-                payment_date:
-                  type: string
-                  format: date
-                notes:
-                  type: string
-      responses:
-        '201':
-          description: تم تسجيل دفعة العميل بنجاح
-        '422':
-          description: المبلغ يتجاوز المتبقي على الطلب أو بيانات غير متطابقة
-
+                amount: { type: number }
+                transaction_date: { type: string, format: date, nullable: true }
+                attachment: { type: string, nullable: true }
+                notes: { type: string, nullable: true }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
   /customer-payments/{customer_payment}:
-    parameters:
-      - name: customer_payment
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [CustomerPayments]
-      summary: عرض دفعة عميل
-      responses:
-        '200':
-          description: نجح
-    delete:
-      tags: [CustomerPayments]
-      summary: حذف دفعة عميل (يُسجّل حركة عكسية في مصدرها)
-      responses:
-        '200':
-          description: تم حذف الدفعة بنجاح
-        '422':
-          description: لا يمكن الحذف إن كانت الدفعة مُحوَّلة للخزينة بالفعل
-
-  /customer-payments/{customer_payment}/remit:
-    parameters:
-      - name: customer_payment
-        in: path
-        required: true
-        schema:
-          type: integer
+    parameters: [{ name: customer_payment, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [CustomerPayments], summary: Show customer payment, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [CustomerPayments], summary: Delete customer payment, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /customer-payments/{customer_payment}/transfer-to-treasury:
+    parameters: [{ name: customer_payment, in: path, required: true, schema: { type: integer } }]
     post:
       tags: [CustomerPayments]
-      summary: تأكيد تحويل دفعة جمعها وكيل إلى خزينة الشركة
-      description: |
-        يُنشئ حركة "in" في AgentTransaction (تُصفّي دَين الوكيل) وحركة "in"
-        في TreasuryTransaction (الشركة تستلم المال فعليًا)، مترابطتين عبر
-        المفاتيح الدائرية الموجودة في الـ migration الأصلي.
+      summary: Approve/transfer customer payment to treasury
       requestBody:
+        required: false
         content:
           application/json:
             schema:
               type: object
               properties:
-                transaction_date:
-                  type: string
-                  format: date
-                notes:
-                  type: string
-      responses:
-        '200':
-          description: تم تأكيد التحويل بنجاح
-        '422':
-          description: الدفعة لم تُجمَع بواسطة وكيل، أو تم تحويلها مسبقًا
-
+                approval_date: { type: string, format: date, nullable: true }
+                notes: { type: string, nullable: true }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
   /agent-transactions:
-    get:
-      tags: [AgentTransactions]
-      summary: قائمة حركات حسابات الوكلاء
-      parameters:
-        - name: agent_id
-          in: query
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/AgentTransaction'
-    post:
-      tags: [AgentTransactions]
-      summary: تسجيل حركة يدوية على حساب وكيل (عمولة، سحب، تصحيح)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [agent_id, direction, amount, transaction_date, notes]
-              properties:
-                agent_id:
-                  type: integer
-                direction:
-                  type: string
-                  enum: [in, out]
-                amount:
-                  type: number
-                transaction_date:
-                  type: string
-                  format: date
-                notes:
-                  type: string
-                  description: إلزامي - يجب توضيح سبب الحركة
-      responses:
-        '201':
-          description: تم تسجيل الحركة بنجاح
-
+    get: { tags: [AgentTransactions], summary: List agent transactions or pending remittances, parameters: [{ name: agent_id, in: query, schema: { type: integer } }, { name: is_remitted, in: query, schema: { type: boolean } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [AgentTransactions], summary: Create manual agent transaction, requestBody: { $ref: '#/components/requestBodies/JsonAgentTransaction' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /agent-transactions/{agent_transaction}:
-    parameters:
-      - name: agent_transaction
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [AgentTransactions]
-      summary: عرض حركة
-      responses:
-        '200':
-          description: نجح
-    delete:
-      tags: [AgentTransactions]
-      summary: حذف حركة يدوية فقط (الحركات التلقائية تُحذف من مصدرها)
-      responses:
-        '200':
-          description: تم حذف الحركة بنجاح
-        '422':
-          description: لا يمكن حذف حركة ناتجة تلقائيًا عن دفعة أو تحويل
-
-  /expenses:
-    get:
-      tags: [Expenses]
-      summary: قائمة المصاريف العامة
-      parameters:
-        - name: car_id
-          in: query
-          schema:
-            type: integer
-        - name: order_id
-          in: query
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
+    parameters: [{ name: agent_transaction, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [AgentTransactions], summary: Show agent transaction, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [AgentTransactions], summary: Delete manual agent transaction, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /agent-transactions/{agent_transaction}/approve-remittance:
+    parameters: [{ name: agent_transaction, in: path, required: true, schema: { type: integer } }]
     post:
-      tags: [Expenses]
-      summary: تسجيل مصروف (مرتبط بسيارة أو طلب على الأقل)
+      tags: [AgentTransactions]
+      summary: Approve agent remittance
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required: [expense_type, amount, expense_date]
               properties:
-                car_id:
-                  type: integer
-                order_id:
-                  type: integer
-                service_provider_id:
-                  type: integer
-                expense_type:
-                  type: string
-                amount:
-                  type: number
-                expense_date:
-                  type: string
-                  format: date
-      responses:
-        '201':
-          description: تم تسجيل المصروف بنجاح
-
+                approval_date: { type: string, format: date, nullable: true }
+                notes: { type: string, nullable: true }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+  /expenses:
+    get: { tags: [Expenses], summary: List expenses, parameters: [{ name: car_id, in: query, schema: { type: integer } }, { name: order_id, in: query, schema: { type: integer } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Expenses], summary: Create expense, requestBody: { $ref: '#/components/requestBodies/Expense' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /expenses/{expense}:
-    parameters:
-      - name: expense
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Expenses]
-      summary: عرض مصروف
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [Expenses]
-      summary: تحديث مصروف
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Expenses]
-      summary: حذف مصروف
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-
+    parameters: [{ name: expense, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Expenses], summary: Show expense, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Expenses], summary: Update expense, requestBody: { $ref: '#/components/requestBodies/Expense' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Expenses], summary: Update expense, requestBody: { $ref: '#/components/requestBodies/Expense' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Expenses], summary: Delete expense, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /invoices:
-    get:
-      tags: [Invoices]
-      summary: قائمة الفواتير (customer يرى فواتير طلباته فقط)
-      parameters:
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
+    get: { tags: [Invoices], summary: List invoices, parameters: [{ $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [Invoices]
-      summary: إنشاء فاتورة من طلب (تأخذ صورة من إجمالي/مدفوع/متبقي وقت الإنشاء)
+      summary: Create invoice from order
       requestBody:
         required: true
         content:
@@ -2297,87 +691,50 @@ paths:
             schema:
               type: object
               required: [order_id]
-              properties:
-                order_id:
-                  type: integer
-      responses:
-        '201':
-          description: تم إنشاء الفاتورة بنجاح
-        '422':
-          description: يوجد فاتورة لهذا الطلب مسبقًا
-
+              properties: { order_id: { type: integer } }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /invoices/{invoice}:
-    parameters:
-      - name: invoice
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Invoices]
-      summary: عرض فاتورة
-      responses:
-        '200':
-          description: نجح
-    delete:
-      tags: [Invoices]
-      summary: حذف فاتورة
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-
+    parameters: [{ name: invoice, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Invoices], summary: Show invoice, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Invoices], summary: Delete invoice, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /invoices/{invoice}/refresh:
-    parameters:
-      - name: invoice
-        in: path
-        required: true
-        schema:
-          type: integer
-    post:
-      tags: [Invoices]
-      summary: إعادة مزامنة الفاتورة مع حالة الطلب الحالية (بعد دفعة جديدة مثلًا)
-      responses:
-        '200':
-          description: تم تحديث الفاتورة بنجاح
-
+    parameters: [{ name: invoice, in: path, required: true, schema: { type: integer } }]
+    post: { tags: [Invoices], summary: Refresh invoice from order totals, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /dashboard:
+    get: { tags: [Dashboard], summary: Dashboard stats, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /tresury/summary:
     get:
-      tags: [Dashboard]
-      summary: الإحصائيات العامة
-      description: |
-        أرقام الربح (total_purchase_cost, total_expenses, total_profit) تظهر
-        فقط لمن يملك صلاحية reports.view_profit (super-admin فقط).
-      responses:
-        '200':
-          description: نجح
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/DashboardStats'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /users:
-    get:
-      tags: [Users]
-      summary: قائمة المستخدمين
+      tags: [Treasury]
+      summary: Treasury summary and movements
+      description: Route name is intentionally `tresury` as defined in routes/api.php.
       parameters:
-        - name: role
-          in: query
-          schema:
-            type: string
-            enum: [super-admin, admin, agent, customer]
-        - $ref: '#/components/parameters/SearchParam'
-        - $ref: '#/components/parameters/PerPage'
-      responses:
-        '200':
-          description: نجح
+        - { name: date_from, in: query, schema: { type: string, format: date } }
+        - { name: date_to, in: query, schema: { type: string, format: date } }
+        - { name: direction, in: query, schema: { type: string, enum: [in, out] } }
+        - { $ref: '#/components/parameters/PerPage' }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+  /treasury/deposit:
+    post:
+      tags: [Treasury]
+      summary: Manual treasury deposit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, transaction_date]
+              properties:
+                amount: { type: number }
+                transaction_date: { type: string, format: date }
+                notes: { type: string, nullable: true }
+                attachment: { type: string, nullable: true }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
+  /users:
+    get: { tags: [Users], summary: List users, parameters: [{ name: role, in: query, schema: { type: string, enum: [super-admin, admin, agent] } }, { $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [Users]
-      summary: إنشاء حساب موظف (admin/agent) - الطريقة الوحيدة لإنشائها
+      summary: Create staff user
       requestBody:
         required: true
         content:
@@ -2386,65 +743,31 @@ paths:
               type: object
               required: [name, email, password, role]
               properties:
-                name:
-                  type: string
-                email:
-                  type: string
-                password:
-                  type: string
-                role:
-                  type: string
-                  enum: [super-admin, admin, agent, customer]
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string, nullable: true }
+                password: { type: string, minLength: 8 }
+                role: { type: string, enum: [super-admin, admin, agent] }
+                is_active: { type: boolean }
                 agent:
                   type: object
-                  description: مطلوب إن كان role=agent
+                  nullable: true
                   properties:
-                    name:
-                      type: string
-                    phone:
-                      type: string
-      responses:
-        '201':
-          description: تم إنشاء المستخدم بنجاح
-
+                    name: { type: string }
+                    phone: { type: string, nullable: true }
+                    address: { type: string, nullable: true }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /users/{user}:
-    parameters:
-      - name: user
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
-      tags: [Users]
-      summary: عرض مستخدم
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [Users]
-      summary: تحديث بيانات مستخدم (ليس الدور أو كلمة المرور)
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Users]
-      summary: حذف مستخدم (لا يمكن حذف حسابك الخاص)
-      responses:
-        '200':
-          description: تم الحذف بنجاح
-        '422':
-          description: لا يمكن الحذف لوجود سجلات مرتبطة كوكيل
-
+    parameters: [{ name: user, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Users], summary: Show user, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Users], summary: Update user, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Users], summary: Update user, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Users], summary: Delete user, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /users/{user}/role:
-    parameters:
-      - name: user
-        in: path
-        required: true
-        schema:
-          type: integer
+    parameters: [{ name: user, in: path, required: true, schema: { type: integer } }]
     patch:
       tags: [Users]
-      summary: تغيير دور المستخدم (منح super-admin يتطلب أن يكون الطالب نفسه super-admin)
+      summary: Change user role
       requestBody:
         required: true
         content:
@@ -2452,40 +775,16 @@ paths:
             schema:
               type: object
               required: [role]
-              properties:
-                role:
-                  type: string
-                  enum: [super-admin, admin, agent, customer]
-      responses:
-        '200':
-          description: تم تحديث دور المستخدم بنجاح
-        '422':
-          description: فقط super-admin يمكنه منح أو سحب دور super-admin
-
+              properties: { role: { type: string, enum: [super-admin, admin, agent] } }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
   /users/{user}/toggle-active:
-    parameters:
-      - name: user
-        in: path
-        required: true
-        schema:
-          type: integer
-    patch:
-      tags: [Users]
-      summary: تفعيل/تعطيل حساب مستخدم
-      responses:
-        '200':
-          description: تم تغيير حالة الحساب بنجاح
-
+    parameters: [{ name: user, in: path, required: true, schema: { type: integer } }]
+    patch: { tags: [Users], summary: Toggle user active state, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /users/{user}/reset-password:
-    parameters:
-      - name: user
-        in: path
-        required: true
-        schema:
-          type: integer
+    parameters: [{ name: user, in: path, required: true, schema: { type: integer } }]
     post:
       tags: [Users]
-      summary: إعادة تعيين كلمة مرور مستخدم (يُلغي كل جلساته الحالية)
+      summary: Reset user password
       requestBody:
         required: true
         content:
@@ -2493,23 +792,13 @@ paths:
             schema:
               type: object
               required: [password]
-              properties:
-                password:
-                  type: string
-      responses:
-        '200':
-          description: تم إعادة تعيين كلمة المرور بنجاح
-
+              properties: { password: { type: string, minLength: 8 } }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
   /settings:
-    get:
-      tags: [Settings]
-      summary: قائمة إعدادات النظام
-      responses:
-        '200':
-          description: نجح
+    get: { tags: [Settings], summary: List settings, responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [Settings]
-      summary: إضافة إعداد جديد
+      summary: Create setting
       requestBody:
         required: true
         content:
@@ -2517,31 +806,14 @@ paths:
             schema:
               type: object
               required: [key, value]
-              properties:
-                key:
-                  type: string
-                value:
-                  type: string
-      responses:
-        '201':
-          description: تم إضافة الإعداد بنجاح
-
+              properties: { key: { type: string }, value: { type: string } }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
   /settings/{setting}:
-    parameters:
-      - name: setting
-        in: path
-        required: true
-        schema:
-          type: integer
-    get:
+    parameters: [{ name: setting, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Settings], summary: Show setting, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: &settingUpdate
       tags: [Settings]
-      summary: عرض إعداد
-      responses:
-        '200':
-          description: نجح
-    put:
-      tags: [Settings]
-      summary: تحديث قيمة إعداد (المفتاح غير قابل للتعديل)
+      summary: Update setting value
       requestBody:
         required: true
         content:
@@ -2549,15 +821,62 @@ paths:
             schema:
               type: object
               required: [value]
+              properties: { value: { type: string } }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+    patch: *settingUpdate
+    delete: { tags: [Settings], summary: Delete setting, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /pre-order-cars:
+    get:
+      tags: [PreOrderCars]
+      summary: List pre-order cars
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [draft, pending, completed] } }
+        - { name: supplier_id, in: query, schema: { type: integer } }
+        - { $ref: '#/components/parameters/PerPage' }
+      responses: { '200': { $ref: '#/components/responses/Ok' } }
+    post: { tags: [PreOrderCars], summary: Create pre-order car draft, requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCar' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /pre-order-cars/import:
+    post: { tags: [PreOrderCars], summary: Import pre-order cars from xlsx/xls/csv, requestBody: { $ref: '#/components/requestBodies/PreOrderImport' }, responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } } }
+  /pre-order-cars/{preOrderCar}:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [PreOrderCars], summary: Show pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [PreOrderCars], summary: Update pre-order car, requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCar' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [PreOrderCars], summary: Delete pre-order car, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /pre-order-cars/{preOrderCar}/publish:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
+    post: { tags: [PreOrderCars], summary: Publish draft pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /pre-order-cars/{preOrderCar}/requests:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [PreOrderCars], summary: List customer requests for a pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post:
+      tags: [PreOrderCars]
+      summary: Create customer request for pre-order car
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customer_id]
               properties:
-                value:
-                  type: string
-      responses:
-        '200':
-          description: تم التحديث بنجاح
-    delete:
-      tags: [Settings]
-      summary: حذف إعداد
-      responses:
-        '200':
-          description: تم الحذف بنجاح
+                customer_id: { type: integer }
+                notes: { type: string, nullable: true }
+      responses: { '201': { $ref: '#/components/responses/Created' } }
+  /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
+    delete: { tags: [PreOrderCars], summary: Cancel pending pre-order request, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+  /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/approve:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
+    post: { tags: [PreOrderCars], summary: Approve pre-order request and create real order, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/reject:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
+    post: { tags: [PreOrderCars], summary: Reject pre-order request, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /contacts:
+    get: { tags: [Contacts], summary: List contacts, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [Contacts], summary: Create contact, requestBody: { $ref: '#/components/requestBodies/JsonContact' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /contacts/{contact}:
+    parameters: [{ name: contact, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [Contacts], summary: Show contact, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [Contacts], summary: Update contact, requestBody: { $ref: '#/components/requestBodies/JsonContact' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    patch: { tags: [Contacts], summary: Update contact, requestBody: { $ref: '#/components/requestBodies/JsonContact' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [Contacts], summary: Delete contact, responses: { '200': { $ref: '#/components/responses/Deleted' } } }

@@ -102,6 +102,11 @@ class Car extends Model
         return $this->belongsTo(ContainerOpener::class);
     }
 
+    public function media(): HasMany
+    {
+        return $this->hasMany(CarMedia::class);
+    }
+
     /**
      * Cost lines for this car (customs, transport, repairs, etc.).
      */
