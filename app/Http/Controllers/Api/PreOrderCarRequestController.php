@@ -9,6 +9,7 @@ use App\Http\Resources\PreOrderCarResource;
 use App\Models\PreOrderCar;
 use App\Models\PreOrderCarRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class PreOrderCarRequestController extends Controller
 {
@@ -36,7 +37,7 @@ class PreOrderCarRequestController extends Controller
      */
     public function index(PreOrderCar $preOrderCar): JsonResponse
     {
-        $this->authorize('view', $preOrderCar);
+        $this->authorize('viewAny', PreOrderCarRequest::class);
 
         $requests = $preOrderCar->requests()->with('customer')->orderByDesc('id')->get();
 
@@ -53,7 +54,7 @@ class PreOrderCarRequestController extends Controller
         $this->authorize('update', $preOrderCar);
 
         try {
-            $order = $preOrderCar->approveRequest($preOrderCarRequest, auth()->id());
+            $order = $preOrderCar->approveRequest($preOrderCarRequest, Auth::id());
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -75,6 +76,7 @@ class PreOrderCarRequestController extends Controller
     public function reject(PreOrderCar $preOrderCar, PreOrderCarRequest $preOrderCarRequest): JsonResponse
     {
         $this->authorize('update', $preOrderCar);
+        $this->authorize('update', $preOrderCarRequest);
 
         if ($preOrderCarRequest->pre_order_car_id !== $preOrderCar->id) {
             return response()->json(['message' => 'هذا الطلب لا يخص سيارة الطلب المسبق هذه'], 422);
@@ -86,7 +88,7 @@ class PreOrderCarRequestController extends Controller
 
         $preOrderCarRequest->update([
             'status' => PreOrderCarRequest::STATUS_REJECTED,
-            'decided_by' => auth()->id(),
+            'decided_by' => Auth::id(),
             'decided_at' => now(),
         ]);
 
@@ -102,6 +104,8 @@ class PreOrderCarRequestController extends Controller
      */
     public function destroy(PreOrderCar $preOrderCar, PreOrderCarRequest $preOrderCarRequest): JsonResponse
     {
+        $this->authorize('delete', $preOrderCarRequest);
+
         if ($preOrderCarRequest->pre_order_car_id !== $preOrderCar->id) {
             return response()->json(['message' => 'هذا الطلب لا يخص سيارة الطلب المسبق هذه'], 422);
         }

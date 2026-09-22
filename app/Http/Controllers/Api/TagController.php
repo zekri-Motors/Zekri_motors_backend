@@ -17,6 +17,8 @@ class TagController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Tag::class);
+
         $tags = Tag::query()
             ->when($request->filled('q'), fn ($q) => $q->where('name', 'like', '%' . $request->string('q') . '%'))
             ->orderBy('name')

@@ -30,6 +30,12 @@ class RolesAndPermissionsSeeder extends Seeder
         'invoices',
         'users',
         'settings',
+        'car_media',
+        'general_media',
+        'contacts',
+        'pre_order_cars',
+        'pre_order_car_requests',
+        'tags',
     ];
 
     /**

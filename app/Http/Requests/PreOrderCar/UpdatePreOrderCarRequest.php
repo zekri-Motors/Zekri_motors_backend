@@ -8,7 +8,7 @@ class UpdatePreOrderCarRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('pre_order_car'));
+        return $this->user()->can('update', $this->route('preOrderCar'));
     }
 
     /**
