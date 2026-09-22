@@ -22,6 +22,13 @@ use App\Http\Controllers\Api\SupplierPaymentController;
 use App\Http\Controllers\Api\TreasuryController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\PreOrderCarController;
+use App\Http\Controllers\Api\PreOrderCarRequestController;
+use App\Http\Controllers\Api\CarMediaController;
+use App\Http\Controllers\Api\GeneralMediaController;
+use App\Http\Controllers\Api\TagController;
+use App\Http\Controllers\Api\ContactController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +68,16 @@ Route::middleware(['auth:sanctum', 'staff_only'])->get('/ping', function (\Illum
         'roles' => $request->user()->getRoleNames(),
     ]);
 });
+
+// Route::prefix('pre-order-cars')->group(function () {
+
+//     // طلبات العملاء على سيارة معيّنة (open request)
+//     Route::get('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'index']);
+//     Route::post('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'store']);
+//     Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/approve', [PreOrderCarRequestController::class, 'approve']);
+//     Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/reject', [PreOrderCarRequestController::class, 'reject']);
+//     Route::delete('/{preOrderCar}/requests/{preOrderCarRequest}', [PreOrderCarRequestController::class, 'destroy']);
+// });
 
 // ------------------------------------------------------------------
 // Public lookup — NO auth token required.
@@ -177,4 +194,50 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
 
     // إعدادات النظام العامة
     Route::apiResource('settings', SettingController::class);
+
+    Route::prefix('pre-order-cars')->group(function () {
+        Route::get('/', [PreOrderCarController::class, 'index']);
+        Route::post('/', [PreOrderCarController::class, 'store']);
+
+        // لازم قبل {preOrderCar} حتى ما يتعارض مع أي مسار GET/POST مشابه لاحقًا.
+        Route::post('/import', [PreOrderCarController::class, 'import']);
+
+        Route::get('/{preOrderCar}', [PreOrderCarController::class, 'show']);
+        Route::put('/{preOrderCar}', [PreOrderCarController::class, 'update']);
+        Route::delete('/{preOrderCar}', [PreOrderCarController::class, 'destroy']);
+        Route::post('/{preOrderCar}/publish', [PreOrderCarController::class, 'publish']);
+
+        // طلبات العملاء على سيارة معيّنة (open request)
+        Route::get('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'index']);
+        Route::post('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'store']);
+        Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/approve', [PreOrderCarRequestController::class, 'approve']);
+        Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/reject', [PreOrderCarRequestController::class, 'reject']);
+        Route::delete('/{preOrderCar}/requests/{preOrderCarRequest}', [PreOrderCarRequestController::class, 'destroy']);
+    });
+
+    Route::prefix('cars/{car}/media')->group(function () {
+        Route::get('/', [CarMediaController::class, 'index']);
+        Route::post('/', [CarMediaController::class, 'store']);
+    });
+
+    Route::prefix('car-media')->group(function () {
+        // لازم قبل أي مسار GET /car-media/{id} إذا أضفت show() لاحقًا.
+        Route::get('/search', [CarMediaController::class, 'search']);
+        Route::put('/{carMedia}', [CarMediaController::class, 'update']);
+        Route::delete('/{carMedia}', [CarMediaController::class, 'destroy']);
+    });
+
+    // ميديا عامة (بدون ربط بسيارة معينة)
+    Route::prefix('general-media')->group(function () {
+        Route::get('/', [GeneralMediaController::class, 'index']);
+        Route::post('/', [GeneralMediaController::class, 'store']);
+        Route::put('/{generalMedia}', [GeneralMediaController::class, 'update']);
+        Route::delete('/{generalMedia}', [GeneralMediaController::class, 'destroy']);
+    });
+
+    // قائمة التاقات (للـ autocomplete عند إضافة/تعديل ميديا)
+    Route::get('/tags', [TagController::class, 'index']);
+
+    Route::apiResource('contacts', ContactController::class);
+
 });
