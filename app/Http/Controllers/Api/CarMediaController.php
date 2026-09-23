@@ -55,7 +55,7 @@ class CarMediaController extends Controller
         ]);
 
         if ($request->filled('tags')) {
-            $media->tags()->sync(TagResolver::resolveIds($request->input('tags')));
+            $media->tags()->sync(TagResolver::resolveIds($request->input('tags'), $request->user()));
         }
 
         // Only one cover image per car.
@@ -74,7 +74,7 @@ class CarMediaController extends Controller
         $carMedia->update($request->safe()->except('tags'));
 
         if ($request->has('tags')) {
-            $carMedia->tags()->sync(TagResolver::resolveIds($request->input('tags', [])));
+            $carMedia->tags()->sync(TagResolver::resolveIds($request->input('tags', []), $request->user()));
         }
 
         if ($request->boolean('is_cover')) {

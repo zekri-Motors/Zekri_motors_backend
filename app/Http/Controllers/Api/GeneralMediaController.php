@@ -55,7 +55,7 @@ class GeneralMediaController extends Controller
         ]);
 
         if ($request->filled('tags')) {
-            $media->tags()->sync(TagResolver::resolveIds($request->input('tags')));
+            $media->tags()->sync(TagResolver::resolveIds($request->input('tags'), $request->user()));
         }
 
         return response()->json([
@@ -69,7 +69,7 @@ class GeneralMediaController extends Controller
         $generalMedia->update($request->safe()->except('tags'));
 
         if ($request->has('tags')) {
-            $generalMedia->tags()->sync(TagResolver::resolveIds($request->input('tags', [])));
+            $generalMedia->tags()->sync(TagResolver::resolveIds($request->input('tags', []), $request->user()));
         }
 
         return response()->json([

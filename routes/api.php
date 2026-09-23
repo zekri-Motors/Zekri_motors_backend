@@ -235,8 +235,7 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
         Route::delete('/{generalMedia}', [GeneralMediaController::class, 'destroy']);
     });
 
-    // قائمة التاقات (للـ autocomplete عند إضافة/تعديل ميديا)
-    Route::get('/tags', [TagController::class, 'index']);
+    Route::apiResource('tags', TagController::class);
 
     Route::apiResource('contacts', ContactController::class);
 

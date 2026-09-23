@@ -33,8 +33,8 @@ class StoreCarMediaRequest extends FormRequest
             'is_cover' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
 
-            // Tag names, e.g. ["خارجية", "محرك"]. Unknown tags are
-            // created automatically — no separate "create tag" step needed.
+            // Tag names, e.g. ["خارجية", "محرك"]. Unknown names are
+            // created only when the user has tags.create.
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
         ];
