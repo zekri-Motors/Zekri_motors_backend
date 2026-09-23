@@ -27,9 +27,9 @@ class StoreGeneralMediaRequest extends FormRequest
 
             'type' => ['nullable', Rule::in([GeneralMedia::TYPE_IMAGE, GeneralMedia::TYPE_VIDEO])],
 
-            'title' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            // 'title' => ['nullable', 'string', 'max:255'],
+            // 'description' => ['nullable', 'string'],
+            // 'sort_order' => ['nullable', 'integer', 'min:0'],
 
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],

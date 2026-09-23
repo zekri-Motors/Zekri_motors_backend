@@ -29,9 +29,9 @@ class StoreCarMediaRequest extends FormRequest
             // Required when 'url' is used; optional (auto-guessed) with 'file'.
             'type' => ['nullable', Rule::in([CarMedia::TYPE_IMAGE, CarMedia::TYPE_VIDEO])],
 
-            'title' => ['nullable', 'string', 'max:255'],
-            'is_cover' => ['nullable', 'boolean'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            // 'title' => ['nullable', 'string', 'max:255'],
+            // 'is_cover' => ['nullable', 'boolean'],
+            // 'sort_order' => ['nullable', 'integer', 'min:0'],
 
             // Tag names, e.g. ["خارجية", "محرك"]. Unknown names are
             // created only when the user has tags.create.

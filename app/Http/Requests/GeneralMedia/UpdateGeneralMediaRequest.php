@@ -17,9 +17,9 @@ class UpdateGeneralMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+            // 'title' => ['nullable', 'string', 'max:255'],
+            // 'description' => ['nullable', 'string'],
+            // 'sort_order' => ['nullable', 'integer', 'min:0'],
 
             // When present, REPLACES the media's full tag set (sync).
             // Omit the field entirely to leave tags untouched.

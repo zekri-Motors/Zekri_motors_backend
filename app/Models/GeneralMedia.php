@@ -24,10 +24,6 @@ class GeneralMedia extends Model
         'disk',
         'path',
         'mime_type',
-        'size',
-        'title',
-        'description',
-        'sort_order',
         'uploaded_by',
     ];
 
