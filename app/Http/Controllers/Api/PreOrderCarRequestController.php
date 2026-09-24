@@ -45,9 +45,9 @@ class PreOrderCarRequestController extends Controller
     }
 
     /**
-     * Approve one customer's request: completes the pre-order car,
-     * auto-rejects every other request on it, and creates the real
-     * Batch + Car + Order for the winning customer.
+     * Approve one customer's request: creates a dedicated Batch + Car +
+     * Order for that customer. The catalog model stays pending so every
+     * other request can be approved too — nothing is auto-rejected.
      */
     public function approve(PreOrderCar $preOrderCar, PreOrderCarRequest $preOrderCarRequest): JsonResponse
     {
@@ -60,7 +60,7 @@ class PreOrderCarRequestController extends Controller
         }
 
         return response()->json([
-            'message' => 'تمت الموافقة على الطلب، وتم إنشاء طلب شراء فعلي للعميل',
+            'message' => 'تمت الموافقة على الطلب، وتم إنشاء طلب شراء فعلي للعميل (يبقى النموذج مفتوحًا لبقية الطلبات)',
             'data' => [
                 'pre_order_car' => new PreOrderCarResource($preOrderCar->fresh()),
                 'order_id' => $order->id,
@@ -70,32 +70,16 @@ class PreOrderCarRequestController extends Controller
     }
 
     /**
-     * Manually reject a single request without completing the car — the
-     * car stays "pending" and open to the remaining customers.
+     * Rejecting customer requests on a catalog model is not supported —
+     * every submitted request is meant to be approved when ready.
      */
     public function reject(PreOrderCar $preOrderCar, PreOrderCarRequest $preOrderCarRequest): JsonResponse
     {
         $this->authorize('update', $preOrderCar);
-        $this->authorize('update', $preOrderCarRequest);
-
-        if ($preOrderCarRequest->pre_order_car_id !== $preOrderCar->id) {
-            return response()->json(['message' => 'هذا الطلب لا يخص سيارة الطلب المسبق هذه'], 422);
-        }
-
-        if (! $preOrderCarRequest->isPending()) {
-            return response()->json(['message' => 'لا يمكن رفض إلا طلب لا يزال قيد الانتظار'], 422);
-        }
-
-        $preOrderCarRequest->update([
-            'status' => PreOrderCarRequest::STATUS_REJECTED,
-            'decided_by' => Auth::id(),
-            'decided_at' => now(),
-        ]);
 
         return response()->json([
-            'message' => 'تم رفض الطلب',
-            'data' => new PreOrderCarRequestResource($preOrderCarRequest->fresh()),
-        ]);
+            'message' => 'لا يمكن رفض طلبات الطلب المسبق — يُقبل كل طلب على حدة دون رفض الآخرين',
+        ], 422);
     }
 
     /**

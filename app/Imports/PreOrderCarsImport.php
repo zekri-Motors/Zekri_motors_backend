@@ -49,16 +49,19 @@ class PreOrderCarsImport implements WithMultipleSheets
  * array keys); every row is read as a plain indexed collection and mapped
  * by POSITION in PreOrderCarsImportService, per this fixed column order.
  *
- * NOTE: unlike BatchCarsRowsImport, there is deliberately NO owner/customer
- * information here — a pre-order car isn't linked to any buyer yet, and no
- * two-price split either (only the single price shown to customers):
+ * NOTE: unlike BatchCarsRowsImport, there is deliberately NO supplier,
+ * owner/customer, VIN, tracking, or any other operational field — only the
+ * catalog model, its customer-facing price, and the applicable customs fee
+ * (new vs. under-three-years, picked from the row based on manufacture_year):
  *
- *   0  العلامة التجارية      -> brand
- *   1  الموديل               -> model
- *   2  الفئة (Finition)      -> finition
- *   3  سنة الصنع             -> manufacture_year
- *   4  اللون                 -> color
- *   5  السعر                 -> price
+ *   0  العلامة التجارية                      -> brand
+ *   1  الموديل                               -> model
+ *   2  الفئة (Finition)                      -> finition
+ *   3  سنة الصنع                             -> manufacture_year
+ *   4  اللون                                 -> color
+ *   5  السعر                                 -> price
+ *   6  مصاريف الجمركة (جديدة)                -> customs (when year >= current)
+ *   7  مصاريف الجمركة (أقل من 3 سنوات)       -> customs (when age < 3, not new)
  *
  * Row 1 is the header row and is skipped via WithStartRow(2).
  */

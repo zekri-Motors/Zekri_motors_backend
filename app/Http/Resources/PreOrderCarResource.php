@@ -28,6 +28,7 @@ class PreOrderCarResource extends JsonResource
             'color' => $this->color,
 
             'price' => (float) $this->price,
+            'customs_fees' => (float) $this->customs_fees,
 
             'status' => $this->status,
 

@@ -28,6 +28,7 @@ class PreOrderCar extends Model
         'manufacture_year',
         'color',
         'price',
+        'customs_fees',
         'status',
         'notes',
         'created_by',
@@ -37,8 +38,54 @@ class PreOrderCar extends Model
     {
         return [
             'price' => 'decimal:2',
+            'customs_fees' => 'decimal:2',
             'manufacture_year' => 'integer',
         ];
+    }
+
+    /**
+     * Pre-order catalog entries are limited to brand-new models or cars
+     * whose manufacture year is less than three calendar years old.
+     */
+    public static function isEligibleManufactureYear(int $manufactureYear): bool
+    {
+        return (self::currentCalendarYear() - $manufactureYear) < 3;
+    }
+
+    public static function isNewManufactureYear(int $manufactureYear): bool
+    {
+        return $manufactureYear >= self::currentCalendarYear();
+    }
+
+    /**
+     * Pick the customs cell that matches the row's manufacture year.
+     *
+     * @throws \RuntimeException
+     */
+    public static function resolveCustomsFees(int $manufactureYear, mixed $customsNew, mixed $customsUnderThree): float
+    {
+        if (! self::isEligibleManufactureYear($manufactureYear)) {
+            throw new \RuntimeException('الطلب المسبق متاح فقط للسيارات الجديدة أو التي عمرها أقل من 3 سنوات');
+        }
+
+        if (self::isNewManufactureYear($manufactureYear)) {
+            if (! is_numeric($customsNew) || (float) $customsNew < 0) {
+                throw new \RuntimeException('مصاريف الجمركة (جديدة) غير صالحة لهذه السنة');
+            }
+
+            return (float) $customsNew;
+        }
+
+        if (! is_numeric($customsUnderThree) || (float) $customsUnderThree < 0) {
+            throw new \RuntimeException('مصاريف الجمركة (أقل من 3 سنوات) غير صالحة لهذه السنة');
+        }
+
+        return (float) $customsUnderThree;
+    }
+
+    private static function currentCalendarYear(): int
+    {
+        return (int) date('Y');
     }
 
     public function supplier(): BelongsTo
@@ -94,13 +141,12 @@ class PreOrderCar extends Model
     }
 
     /**
-     * Approve one customer's request for this pre-order car:
+     * Approve one customer's request for this catalog model:
      *
-     *   1. every OTHER pending request on this same car is auto-rejected
-     *   2. the chosen request is marked "approved"
-     *   3. a real Batch (one supplier, one car) + Car + Order are created
-     *      for the winning customer, exactly like a normal batch import
-     *   4. this pre-order car itself is marked "completed"
+     *   1. the approved request is marked "approved"
+     *   2. a real Batch (one car) + Car + Order are created for that customer
+     *   3. other pending requests on the same model stay untouched — the
+     *      pre-order car remains "pending" so every request can be approved
      *
      * The whole operation is atomic — either everything above happens, or
      * nothing does.
@@ -124,30 +170,16 @@ class PreOrderCar extends Model
         }
 
         return DB::transaction(function () use ($request, $decidedBy) {
-            // 1. Auto-reject every other still-pending request on this car.
-            $this->requests()
-                ->where('id', '!=', $request->id)
-                ->where('status', PreOrderCarRequest::STATUS_PENDING)
-                ->update([
-                    'status' => PreOrderCarRequest::STATUS_REJECTED,
-                    'decided_by' => $decidedBy,
-                    'decided_at' => now(),
-                ]);
-
-            // 2. Approve the winning request.
             $request->update([
                 'status' => PreOrderCarRequest::STATUS_APPROVED,
                 'decided_by' => $decidedBy,
                 'decided_at' => now(),
             ]);
 
-            // 3. A "batch of one" that represents this specific car's real
-            // shipment — keeps this Car consistent with every other Car
-            // row in the system, since Car::batch_id is required there too.
             $batch = Batch::create([
                 'supplier_id' => $this->supplier_id,
                 'purchase_date' => now()->toDateString(),
-                'notes' => "تم إنشاؤه تلقائيًا من الطلب المسبق رقم #{$this->id}",
+                'notes' => "تم إنشاؤه تلقائيًا من الطلب المسبق (نموذج) رقم #{$this->id} — طلب عميل #{$request->id}",
                 'status' => Batch::STATUS_PARTIAL,
             ]);
 
@@ -161,9 +193,6 @@ class PreOrderCar extends Model
                 'manufacture_year' => $this->manufacture_year,
                 'color' => $this->color,
                 'vin' => null,
-                // Only one price was ever collected for a pre-order car;
-                // it is used as both sides here, same fallback the normal
-                // import uses when a sale price isn't given separately.
                 'foreign_purchase_price' => (float) $this->price,
                 'shipping_cost' => 0,
                 'sale_price' => (float) $this->price,
@@ -171,6 +200,16 @@ class PreOrderCar extends Model
                 'arrival_date' => null,
                 'status' => Car::STATUS_SHIPPING,
             ]);
+
+            if ((float) $this->customs_fees > 0) {
+                CarExpense::create([
+                    'car_id' => $car->id,
+                    'expense_type' => 'جمركة',
+                    'foreign_amount' => 0,
+                    'local_amount' => (float) $this->customs_fees,
+                    'notes' => 'من نموذج الطلب المسبق',
+                ]);
+            }
 
             $batch->update(['cars_count' => 1]);
             $batch->recomputeTotalCostForeign(save: false);
@@ -188,9 +227,6 @@ class PreOrderCar extends Model
                 'remaining_amount' => $car->sale_price,
                 'created_by' => $decidedBy,
             ]);
-
-            // 4. Close the pre-order car out.
-            $this->update(['status' => self::STATUS_COMPLETED]);
 
             return $order;
         });

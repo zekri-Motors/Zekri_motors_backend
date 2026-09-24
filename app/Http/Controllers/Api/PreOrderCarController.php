@@ -108,7 +108,6 @@ class PreOrderCarController extends Controller
     {
         try {
             $result = $importService->import(
-                $request->validated(),
                 $request->file('file'),
                 $request->user()->id
             );

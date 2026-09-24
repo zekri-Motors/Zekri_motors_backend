@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\PreOrderCar;
 
+use App\Models\PreOrderCar;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePreOrderCarRequest extends FormRequest
@@ -17,11 +18,6 @@ class UpdatePreOrderCarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // supplier_id is intentionally not editable here — changing the
-            // supplier after creation would leave the car's origin
-            // inconsistent with how it was imported/grouped.
-            'container_opener_id' => ['nullable', 'integer', 'exists:container_openers,id'],
-
             'brand' => ['sometimes', 'required', 'string', 'max:255'],
             'model' => ['sometimes', 'required', 'string', 'max:255'],
             'finition' => ['nullable', 'string', 'max:255'],
@@ -29,7 +25,26 @@ class UpdatePreOrderCarRequest extends FormRequest
             'color' => ['nullable', 'string', 'max:255'],
 
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'customs_fees' => ['sometimes', 'required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if (! $this->has('manufacture_year')) {
+                return;
+            }
+
+            $year = (int) $this->input('manufacture_year');
+
+            if (! PreOrderCar::isEligibleManufactureYear($year)) {
+                $validator->errors()->add(
+                    'manufacture_year',
+                    'الطلب المسبق متاح فقط للسيارات الجديدة أو التي عمرها أقل من 3 سنوات'
+                );
+            }
+        });
     }
 }

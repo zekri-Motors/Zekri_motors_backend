@@ -226,16 +226,15 @@ components:
         notes: { type: string }
     PreOrderCarRequest:
       type: object
-      required: [supplier_id, brand, model, manufacture_year, price]
+      required: [brand, model, manufacture_year, price, customs_fees]
       properties:
-        supplier_id: { type: integer }
-        container_opener_id: { type: integer, nullable: true }
         brand: { type: string }
         model: { type: string }
         finition: { type: string, nullable: true }
         manufacture_year: { type: integer }
         color: { type: string, nullable: true }
         price: { type: number }
+        customs_fees: { type: number }
         notes: { type: string, nullable: true }
     MediaUpdateRequest:
       type: object
@@ -281,11 +280,8 @@ components:
         multipart/form-data:
           schema:
             type: object
-            required: [supplier_id, file]
+            required: [file]
             properties:
-              supplier_id: { type: integer }
-              container_opener_id: { type: integer, nullable: true }
-              notes: { type: string, nullable: true }
               file: { type: string, format: binary }
     MediaUpload:
       required: true
@@ -870,7 +866,7 @@ paths:
     post: { tags: [PreOrderCars], summary: Approve pre-order request and create real order, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/reject:
     parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
-    post: { tags: [PreOrderCars], summary: Reject pre-order request, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [PreOrderCars], summary: Reject pre-order request (disabled — all requests are approved individually), responses: { '422': { $ref: '#/components/responses/ValidationError' } } }
   /contacts:
     get: { tags: [Contacts], summary: List contacts, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post: { tags: [Contacts], summary: Create contact, requestBody: { $ref: '#/components/requestBodies/JsonContact' }, responses: { '201': { $ref: '#/components/responses/Created' } } }

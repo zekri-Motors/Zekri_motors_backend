@@ -18,13 +18,6 @@ class ImportPreOrderCarsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Entered manually on the same screen as the file upload —
-            // one supplier/container-opener for the whole sheet, same
-            // pattern as the normal batch import.
-            'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
-            'container_opener_id' => ['nullable', 'integer', 'exists:container_openers,id'],
-            'notes' => ['nullable', 'string'],
-
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
         ];
     }

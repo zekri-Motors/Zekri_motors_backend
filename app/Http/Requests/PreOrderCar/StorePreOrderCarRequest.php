@@ -18,9 +18,6 @@ class StorePreOrderCarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
-            'container_opener_id' => ['nullable', 'integer', 'exists:container_openers,id'],
-
             'brand' => ['required', 'string', 'max:255'],
             'model' => ['required', 'string', 'max:255'],
             'finition' => ['nullable', 'string', 'max:255'],
@@ -28,7 +25,22 @@ class StorePreOrderCarRequest extends FormRequest
             'color' => ['nullable', 'string', 'max:255'],
 
             'price' => ['required', 'numeric', 'min:0'],
+            'customs_fees' => ['required', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $year = (int) $this->input('manufacture_year');
+
+            if (! PreOrderCar::isEligibleManufactureYear($year)) {
+                $validator->errors()->add(
+                    'manufacture_year',
+                    'الطلب المسبق متاح فقط للسيارات الجديدة أو التي عمرها أقل من 3 سنوات'
+                );
+            }
+        });
     }
 }
