@@ -63,8 +63,7 @@ class PreOrderCarRequestController extends Controller
             'message' => 'تمت الموافقة على الطلب، وتم إنشاء طلب شراء فعلي للعميل (يبقى النموذج مفتوحًا لبقية الطلبات)',
             'data' => [
                 'pre_order_car' => new PreOrderCarResource($preOrderCar->fresh()),
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
+                
             ],
         ]);
     }
