@@ -89,6 +89,9 @@ Route::middleware('throttle:lookup')->group(function () {
     Route::get('lookup/customer',               [CustomerLookupController::class, 'show']);
 });
 
+Route::post('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'store']);
+
+
 // Public catalogue - NO auth token required.
 Route::get('cars/available', [CarController::class, 'available']);
 
@@ -209,7 +212,6 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
 
         // طلبات العملاء على سيارة معيّنة (open request)
         Route::get('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'index']);
-        Route::post('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'store']);
         Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/approve', [PreOrderCarRequestController::class, 'approve']);
         Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/reject', [PreOrderCarRequestController::class, 'reject']);
         Route::delete('/{preOrderCar}/requests/{preOrderCarRequest}', [PreOrderCarRequestController::class, 'destroy']);
