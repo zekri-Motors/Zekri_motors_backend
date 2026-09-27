@@ -39,6 +39,8 @@ class PreOrderCarResource extends JsonResource
             ),
             'requests' => PreOrderCarRequestResource::collection($this->whenLoaded('requests')),
 
+            'media' => CarMediaResource::collection($this->whenLoaded('media')),
+
             'notes' => $this->notes,
             'created_by' => $this->created_by,
 

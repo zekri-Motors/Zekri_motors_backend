@@ -104,6 +104,14 @@ class PreOrderCar extends Model
         return $this->hasMany(PreOrderCarRequest::class);
     }
 
+    /**
+     * Images and videos attached to this pre-order catalog entry.
+     */
+    public function media(): HasMany
+    {
+        return $this->hasMany(CarMedia::class, 'pre_order_car_id');
+    }
+
     public function isDraft(): bool
     {
         return $this->published_at === null;

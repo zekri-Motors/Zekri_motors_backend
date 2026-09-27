@@ -20,6 +20,7 @@ class CarMedia extends Model
 
     protected $fillable = [
         'car_id',
+        'pre_order_car_id',
         'type',
         'url',
         'disk',
@@ -53,6 +54,11 @@ class CarMedia extends Model
     public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
+    }
+
+    public function preOrderCar(): BelongsTo
+    {
+        return $this->belongsTo(PreOrderCar::class);
     }
 
     public function uploadedByUser(): BelongsTo

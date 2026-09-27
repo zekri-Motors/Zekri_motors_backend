@@ -21,7 +21,10 @@ class PreOrderCarController extends Controller
         $this->authorize('viewAny', PreOrderCar::class);
 
         $cars = PreOrderCar::query()
-            ->with('supplier')
+            ->with([
+                'supplier',
+                'media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+            ])
             ->withCount('requests')
             ->when($request->string('status') === 'draft', fn ($q) => $q->whereNull('published_at'))
             ->when($request->string('status') === 'pending', fn ($q) => $q->whereNotNull('published_at'))
@@ -41,7 +44,7 @@ class PreOrderCarController extends Controller
 
         return response()->json([
             'message' => 'تم إنشاء سيارة الطلب المسبق بنجاح',
-            'data' => new PreOrderCarResource($car->load('supplier')),
+            'data' => new PreOrderCarResource($car->load(['supplier', 'media'])),
         ], 201);
     }
 
@@ -49,7 +52,11 @@ class PreOrderCarController extends Controller
     {
         $this->authorize('view', $preOrderCar);
 
-        $preOrderCar->load(['supplier', 'requests.contact']);
+        $preOrderCar->load([
+            'supplier',
+            'requests.contact',
+            'media' => fn ($q) => $q->with('tags')->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+        ]);
 
         return response()->json(['data' => new PreOrderCarResource($preOrderCar)]);
     }
@@ -60,7 +67,7 @@ class PreOrderCarController extends Controller
 
         return response()->json([
             'message' => 'تم تحديث سيارة الطلب المسبق بنجاح',
-            'data' => new PreOrderCarResource($preOrderCar->fresh('supplier')),
+            'data' => new PreOrderCarResource($preOrderCar->fresh(['supplier', 'media'])),
         ]);
     }
 
@@ -80,7 +87,7 @@ class PreOrderCarController extends Controller
 
         return response()->json([
             'message' => 'أصبحت السيارة متاحة الآن للطلب المسبق',
-            'data' => new PreOrderCarResource($preOrderCar->fresh()),
+            'data' => new PreOrderCarResource($preOrderCar->fresh(['media'])),
         ]);
     }
 

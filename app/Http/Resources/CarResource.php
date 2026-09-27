@@ -108,6 +108,7 @@ class CarResource extends JsonResource
             // broader — an admin can ADD an expense (cars.update) without
             // being able to SEE the resulting cost breakdown here.
             'expenses' => $this->when($canSeeCosts, fn() => CarExpenseResource::collection($this->whenLoaded('expenses'))),
+            'media' => CarMediaResource::collection($this->whenLoaded('media')),
             'documents' => DocumentResource::collection($this->whenLoaded('documents')),
             'order' => new \App\Http\Resources\OrderMiniResource($this->whenLoaded('order')),
 
