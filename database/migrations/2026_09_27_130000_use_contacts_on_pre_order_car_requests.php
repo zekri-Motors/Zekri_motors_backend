@@ -13,30 +13,73 @@ return new class extends Migration
             return;
         }
 
-        // Old pre-order requests are no longer compatible with the new
-        // contact-based structure.
+        /*
+         * Old rows were tied to customers.
+         * Pre-order requests now use contacts.
+         */
         DB::table('pre_order_car_requests')->delete();
 
-        // Drop the foreign key first.
-        Schema::table('pre_order_car_requests', function (Blueprint $table) {
-            $table->dropForeign(
-                'pre_order_car_requests_customer_id_foreign'
-            );
-        });
+        /*
+         * Find and remove any FOREIGN KEY that uses customer_id.
+         *
+         * We don't assume the constraint name because the production
+         * database may have a different name.
+         */
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            $database = DB::getDatabaseName();
 
-        // Then drop the unique index.
-        Schema::table('pre_order_car_requests', function (Blueprint $table) {
-            $table->dropUnique(
+            $foreignKeys = DB::select(
+                "
+                SELECT DISTINCT CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ?
+                  AND TABLE_NAME = 'pre_order_car_requests'
+                  AND COLUMN_NAME = 'customer_id'
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+                ",
+                [$database]
+            );
+
+            foreach ($foreignKeys as $foreignKey) {
+                DB::statement(
+                    'ALTER TABLE `pre_order_car_requests` DROP FOREIGN KEY `' .
+                    $foreignKey->CONSTRAINT_NAME .
+                    '`'
+                );
+            }
+        }
+
+        /*
+         * Now the unique index can be removed safely.
+         */
+        $indexes = DB::select(
+            "SHOW INDEX FROM `pre_order_car_requests`"
+        );
+
+        $uniqueIndexExists = collect($indexes)->contains(
+            fn ($index) =>
+                $index->Key_name ===
                 'pre_order_car_requests_pre_order_car_id_customer_id_unique'
-            );
-        });
+        );
 
-        // Finally remove customer_id.
+        if ($uniqueIndexExists) {
+            Schema::table('pre_order_car_requests', function (Blueprint $table) {
+                $table->dropUnique(
+                    'pre_order_car_requests_pre_order_car_id_customer_id_unique'
+                );
+            });
+        }
+
+        /*
+         * Remove customer_id.
+         */
         Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->dropColumn('customer_id');
         });
 
-        // Add contact_id.
+        /*
+         * Add contact_id.
+         */
         Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->foreignId('contact_id')
                 ->after('pre_order_car_id')
@@ -45,7 +88,7 @@ return new class extends Migration
 
             $table->unique([
                 'pre_order_car_id',
-                'contact_id'
+                'contact_id',
             ]);
         });
     }
@@ -56,26 +99,64 @@ return new class extends Migration
             return;
         }
 
-        // Drop contact foreign key first.
-        Schema::table('pre_order_car_requests', function (Blueprint $table) {
-            $table->dropForeign(
-                'pre_order_car_requests_contact_id_foreign'
-            );
-        });
+        /*
+         * Remove contact foreign key.
+         */
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            $database = DB::getDatabaseName();
 
-        // Drop contact unique index.
-        Schema::table('pre_order_car_requests', function (Blueprint $table) {
-            $table->dropUnique(
+            $foreignKeys = DB::select(
+                "
+                SELECT DISTINCT CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = ?
+                  AND TABLE_NAME = 'pre_order_car_requests'
+                  AND COLUMN_NAME = 'contact_id'
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+                ",
+                [$database]
+            );
+
+            foreach ($foreignKeys as $foreignKey) {
+                DB::statement(
+                    'ALTER TABLE `pre_order_car_requests` DROP FOREIGN KEY `' .
+                    $foreignKey->CONSTRAINT_NAME .
+                    '`'
+                );
+            }
+        }
+
+        /*
+         * Remove contact unique index.
+         */
+        $indexes = DB::select(
+            "SHOW INDEX FROM `pre_order_car_requests`"
+        );
+
+        $uniqueIndexExists = collect($indexes)->contains(
+            fn ($index) =>
+                $index->Key_name ===
                 'pre_order_car_requests_pre_order_car_id_contact_id_unique'
-            );
-        });
+        );
 
-        // Remove contact_id.
+        if ($uniqueIndexExists) {
+            Schema::table('pre_order_car_requests', function (Blueprint $table) {
+                $table->dropUnique(
+                    'pre_order_car_requests_pre_order_car_id_contact_id_unique'
+                );
+            });
+        }
+
+        /*
+         * Remove contact_id.
+         */
         Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->dropColumn('contact_id');
         });
 
-        // Restore customer_id.
+        /*
+         * Restore customer_id.
+         */
         Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->foreignId('customer_id')
                 ->after('pre_order_car_id')
@@ -84,7 +165,7 @@ return new class extends Migration
 
             $table->unique([
                 'pre_order_car_id',
-                'customer_id'
+                'customer_id',
             ]);
         });
     }
