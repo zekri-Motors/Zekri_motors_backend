@@ -18,11 +18,8 @@ class PreOrderCarRequestResource extends JsonResource
         return [
             'id' => $this->id,
             'pre_order_car_id' => $this->pre_order_car_id,
-            'customer_id' => $this->customer_id,
-            // NOTE: assumes a CustomerMiniResource exists, mirroring
-            // SupplierMiniResource used in BatchResource. Swap for your
-            // actual Customer resource if the name differs.
-            'customer' => new CustomerMiniResource($this->whenLoaded('customer')),
+            'contact_id' => $this->contact_id,
+            'contact' => new ContactResource($this->whenLoaded('contact')),
 
             'status' => $this->status,
             'notes' => $this->notes,

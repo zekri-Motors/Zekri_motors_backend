@@ -843,19 +843,22 @@ paths:
     post: { tags: [PreOrderCars], summary: Publish draft pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /pre-order-cars/{preOrderCar}/requests:
     parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
-    get: { tags: [PreOrderCars], summary: List customer requests for a pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    get: { tags: [PreOrderCars], summary: List contact-based pre-order requests for a car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [PreOrderCars]
-      summary: Create customer request for pre-order car
+      summary: Submit public pre-order request (registers contact; no customer account)
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [customer_id]
+              required: [name, whatsapp_number]
               properties:
-                customer_id: { type: integer }
+                name: { type: string }
+                whatsapp_number: { type: string }
+                address: { type: string, nullable: true }
                 notes: { type: string, nullable: true }
       responses: { '201': { $ref: '#/components/responses/Created' } }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}:
@@ -863,7 +866,7 @@ paths:
     delete: { tags: [PreOrderCars], summary: Cancel pending pre-order request, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/approve:
     parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
-    post: { tags: [PreOrderCars], summary: Approve pre-order request and create real order, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [PreOrderCars], summary: Approve pre-order request (status only — no order/car/batch), responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/reject:
     parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
     post: { tags: [PreOrderCars], summary: Reject pre-order request (disabled — all requests are approved individually), responses: { '422': { $ref: '#/components/responses/ValidationError' } } }

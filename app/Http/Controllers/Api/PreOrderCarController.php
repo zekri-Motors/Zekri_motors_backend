@@ -49,7 +49,7 @@ class PreOrderCarController extends Controller
     {
         $this->authorize('view', $preOrderCar);
 
-        $preOrderCar->load(['supplier', 'requests.customer']);
+        $preOrderCar->load(['supplier', 'requests.contact']);
 
         return response()->json(['data' => new PreOrderCarResource($preOrderCar)]);
     }

@@ -2,15 +2,15 @@
 
 namespace App\Http\Requests\PreOrderCarRequest;
 
+use App\Models\Contact;
 use App\Models\PreOrderCar;
-use App\Models\PreOrderCarRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePreOrderCarRequestRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', PreOrderCarRequest::class);
+        return true;
     }
 
     /**
@@ -19,16 +19,25 @@ class StorePreOrderCarRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'whatsapp_number' => ['required', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{6,20}$/'],
+            'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ];
     }
 
     /**
-     * Extra guards that need the route's PreOrderCar model, done here
-     * (rather than in rules()) so we can give one clear Arabic message
-     * per failure instead of a generic validation error.
+     * @return array<string, string>
      */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'اسم جهة الاتصال إلزامي',
+            'whatsapp_number.required' => 'رقم الواتساب إلزامي',
+            'whatsapp_number.regex' => 'رقم الواتساب غير صالح',
+        ];
+    }
+
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
@@ -41,8 +50,16 @@ class StorePreOrderCarRequestRequest extends FormRequest
                 return;
             }
 
-            if ($preOrderCar->requests()->where('customer_id', $this->input('customer_id'))->exists()) {
-                $validator->errors()->add('customer_id', 'لقد قام هذا العميل بتقديم طلب على هذه السيارة مسبقًا');
+            $whatsapp = preg_replace('/[\s\-]/', '', (string) $this->input('whatsapp_number'));
+
+            $contactIds = Contact::query()
+                ->where('whatsapp_number', $this->input('whatsapp_number'))
+                ->orWhere('whatsapp_number', $whatsapp)
+                ->pluck('id');
+
+            if ($contactIds->isNotEmpty()
+                && $preOrderCar->requests()->whereIn('contact_id', $contactIds)->exists()) {
+                $validator->errors()->add('whatsapp_number', 'تم تقديم طلب مسبق على هذه السيارة بهذا الرقم مسبقًا');
             }
         });
     }

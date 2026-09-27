@@ -89,8 +89,11 @@ Route::middleware('throttle:lookup')->group(function () {
     Route::get('lookup/customer',               [CustomerLookupController::class, 'show']);
 });
 
-Route::post('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'store']);
-
+// Public pre-order request (contact info required — no customer account).
+Route::middleware('throttle:lookup')->post(
+    'pre-order-cars/{preOrderCar}/requests',
+    [PreOrderCarRequestController::class, 'store']
+);
 
 // Public catalogue - NO auth token required.
 Route::get('cars/available', [CarController::class, 'available']);

@@ -12,11 +12,11 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('pre_order_car_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('customer_id')->constrained()->restrictOnDelete();
+            $table->foreignId('contact_id')->constrained()->restrictOnDelete();
 
             // draft     -> saved but not yet submitted for processing
-            // pending   -> submitted, awaiting staff decision / fulfillment
-            // completed -> approved; a real Batch/Car/Order now exists for this customer
+            // pending   -> submitted, awaiting staff decision
+            // completed -> approved; remains a pre-order record only (no order/car/batch)
             $table->enum('status', ['draft', 'pending', 'completed'])
                 ->default('draft')
                 ->index();
@@ -28,9 +28,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // One request per customer per pre-order car — a customer
-            // updates/cancels their existing request instead of duplicating it.
-            $table->unique(['pre_order_car_id', 'customer_id']);
+            // One request per contact per pre-order car.
+            $table->unique(['pre_order_car_id', 'contact_id']);
         });
     }
 
