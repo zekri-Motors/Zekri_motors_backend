@@ -10,11 +10,11 @@ class PreOrderCarRequest extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PENDING = 'pending';
 
-    public const STATUS_APPROVED = 'approved';
-
-    public const STATUS_REJECTED = 'rejected';
+    public const STATUS_COMPLETED = 'completed';
 
     protected $fillable = [
         'pre_order_car_id',
@@ -47,8 +47,18 @@ class PreOrderCarRequest extends Model
         return $this->belongsTo(User::class, 'decided_by');
     }
 
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === self::STATUS_COMPLETED;
     }
 }

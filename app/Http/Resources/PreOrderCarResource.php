@@ -30,7 +30,8 @@ class PreOrderCarResource extends JsonResource
             'price' => (float) $this->price,
             'customs_fees' => (float) $this->customs_fees,
 
-            'status' => $this->status,
+            'published_at' => $this->published_at,
+            'is_published' => $this->published_at !== null,
 
             'requests_count' => $this->when(
                 $this->requests_count !== null,

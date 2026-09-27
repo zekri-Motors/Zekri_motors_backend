@@ -27,13 +27,9 @@ return new class extends Migration
             // Single price shown to the customer (not a purchase/sale pair).
             $table->decimal('price', 12, 2);
 
-            // draft   -> just imported, not visible to customers yet
-            // pending -> published, open for customer requests
-            // completed -> one request was approved; a real Batch/Car/Order
-            //              now exists for the winning customer
-            $table->enum('status', ['draft', 'pending', 'completed'])
-                ->default('draft')
-                ->index();
+            // null -> just imported, not visible to customers yet (draft)
+            // set  -> published, open for customer requests (see publish())
+            $table->timestamp('published_at')->nullable()->index();
 
             $table->text('notes')->nullable();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();

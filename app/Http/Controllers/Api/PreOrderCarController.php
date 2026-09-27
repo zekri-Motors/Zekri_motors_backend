@@ -23,7 +23,8 @@ class PreOrderCarController extends Controller
         $cars = PreOrderCar::query()
             ->with('supplier')
             ->withCount('requests')
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->string('status') === 'draft', fn ($q) => $q->whereNull('published_at'))
+            ->when($request->string('status') === 'pending', fn ($q) => $q->whereNotNull('published_at'))
             ->when($request->filled('supplier_id'), fn ($q) => $q->where('supplier_id', $request->integer('supplier_id')))
             ->orderByDesc('id')
             ->paginate($request->integer('per_page', 15));
@@ -35,7 +36,7 @@ class PreOrderCarController extends Controller
     {
         $car = PreOrderCar::create(
             $request->validated()
-            + ['status' => PreOrderCar::STATUS_DRAFT, 'created_by' => $request->user()->id]
+            + ['created_by' => $request->user()->id]
         );
 
         return response()->json([
@@ -55,12 +56,6 @@ class PreOrderCarController extends Controller
 
     public function update(UpdatePreOrderCarRequest $request, PreOrderCar $preOrderCar): JsonResponse
     {
-        if ($preOrderCar->isCompleted()) {
-            return response()->json([
-                'message' => 'لا يمكن تعديل سيارة طلب مسبق مكتملة',
-            ], 422);
-        }
-
         $preOrderCar->update($request->validated());
 
         return response()->json([
@@ -93,9 +88,9 @@ class PreOrderCarController extends Controller
     {
         $this->authorize('delete', $preOrderCar);
 
-        if ($preOrderCar->isCompleted() || $preOrderCar->requests()->exists()) {
+        if ($preOrderCar->requests()->exists()) {
             return response()->json([
-                'message' => 'لا يمكن حذف سيارة طلب مسبق لوجود طلبات عملاء مرتبطة بها أو لأنها مكتملة',
+                'message' => 'لا يمكن حذف سيارة طلب مسبق لوجود طلبات عملاء مرتبطة بها',
             ], 422);
         }
 

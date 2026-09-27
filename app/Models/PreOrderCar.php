@@ -13,12 +13,6 @@ class PreOrderCar extends Model
 {
     use HasFactory;
 
-    public const STATUS_DRAFT = 'draft';
-
-    public const STATUS_PENDING = 'pending';
-
-    public const STATUS_COMPLETED = 'completed';
-
     protected $fillable = [
         'supplier_id',
         'container_opener_id',
@@ -29,7 +23,7 @@ class PreOrderCar extends Model
         'color',
         'price',
         'customs_fees',
-        'status',
+        'published_at',
         'notes',
         'created_by',
     ];
@@ -40,6 +34,7 @@ class PreOrderCar extends Model
             'price' => 'decimal:2',
             'customs_fees' => 'decimal:2',
             'manufacture_year' => 'integer',
+            'published_at' => 'datetime',
         ];
     }
 
@@ -114,36 +109,30 @@ class PreOrderCar extends Model
 
     public function isDraft(): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        return $this->published_at === null;
     }
 
     public function isPending(): bool
     {
-        return $this->status === self::STATUS_PENDING;
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->status === self::STATUS_COMPLETED;
+        return $this->published_at !== null;
     }
 
     /**
-     * Move a freshly imported pre-order car from draft into pending,
-     * making it visible to customers and open for requests.
+     * Publish a catalog model so customers can submit requests.
      */
     public function publish(): void
     {
         if (! $this->isDraft()) {
-            throw new \RuntimeException('لا يمكن نشر سيارة الطلب المسبق إلا وهي في حالة مسودة (draft)');
+            throw new \RuntimeException('لا يمكن نشر سيارة الطلب المسبق إلا قبل أن تُنشر لأول مرة');
         }
 
-        $this->update(['status' => self::STATUS_PENDING]);
+        $this->update(['published_at' => now()]);
     }
 
     /**
      * Approve one customer's request for this catalog model:
      *
-     *   1. the approved request is marked "approved"
+     *   1. the approved request is marked "completed"
      *   2. a real Batch (one car) + Car + Order are created for that customer
      *   3. other pending requests on the same model stay untouched — the
      *      pre-order car remains "pending" so every request can be approved
@@ -171,7 +160,7 @@ class PreOrderCar extends Model
 
         return DB::transaction(function () use ($request, $decidedBy) {
             $request->update([
-                'status' => PreOrderCarRequest::STATUS_APPROVED,
+                'status' => PreOrderCarRequest::STATUS_COMPLETED,
                 'decided_by' => $decidedBy,
                 'decided_at' => now(),
             ]);

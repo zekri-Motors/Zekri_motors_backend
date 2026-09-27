@@ -14,12 +14,11 @@ return new class extends Migration
             $table->foreignId('pre_order_car_id')->constrained()->cascadeOnDelete();
             $table->foreignId('customer_id')->constrained()->restrictOnDelete();
 
-            // pending  -> awaiting a staff decision
-            // approved -> this is the winning customer (only one per car)
-            // rejected -> either lost automatically when another request
-            //             on the same car was approved, or rejected manually
-            $table->enum('status', ['pending', 'approved', 'rejected'])
-                ->default('pending')
+            // draft     -> saved but not yet submitted for processing
+            // pending   -> submitted, awaiting staff decision / fulfillment
+            // completed -> approved; a real Batch/Car/Order now exists for this customer
+            $table->enum('status', ['draft', 'pending', 'completed'])
+                ->default('draft')
                 ->index();
 
             $table->text('notes')->nullable();

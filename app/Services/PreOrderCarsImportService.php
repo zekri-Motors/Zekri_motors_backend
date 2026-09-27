@@ -133,7 +133,6 @@ class PreOrderCarsImportService
             'color' => $color,
             'price' => (float) $price,
             'customs_fees' => $customsFees,
-            'status' => PreOrderCar::STATUS_DRAFT,
             'notes' => null,
             'created_by' => $createdBy,
         ]);
