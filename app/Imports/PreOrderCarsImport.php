@@ -10,9 +10,8 @@ use Maatwebsite\Excel\Concerns\WithStartRow;
 /**
  * Entry point handed to Excel::import() for the "Pre-order Cars" sheet.
  *
- * Same WithMultipleSheets trick as BatchCarsImport: pin the import to
- * sheet index 0 explicitly, so an extra "Notes" sheet elsewhere in the
- * workbook is never touched and can't silently overwrite these rows.
+ * Pinned to sheet index 0 so any extra sheets (e.g. Notes) in the workbook
+ * are never touched.
  */
 class PreOrderCarsImport implements WithMultipleSheets
 {
@@ -43,25 +42,22 @@ class PreOrderCarsImport implements WithMultipleSheets
 }
 
 /**
- * Raw reader for the actual "Pre-order Cars" sheet.
+ * Raw reader for the "Pre-order Cars" sheet.
  *
- * No WithHeadingRow (Arabic headers don't slugify reliably into ASCII
- * array keys); every row is read as a plain indexed collection and mapped
- * by POSITION in PreOrderCarsImportService, per this fixed column order.
+ * No WithHeadingRow — Arabic headers don't slugify reliably into ASCII keys;
+ * every row is read as a plain indexed collection and mapped by POSITION in
+ * PreOrderCarsImportService per this fixed column order:
  *
- * NOTE: unlike BatchCarsRowsImport, there is deliberately NO supplier,
- * owner/customer, VIN, tracking, or any other operational field — only the
- * catalog model, its customer-facing price, and the applicable customs fee
- * (new vs. under-three-years, picked from the row based on manufacture_year):
- *
- *   0  العلامة التجارية                      -> brand
- *   1  الموديل                               -> model
- *   2  الفئة (Finition)                      -> finition
- *   3  سنة الصنع                             -> manufacture_year
- *   4  اللون                                 -> color
- *   5  السعر                                 -> price
- *   6  مصاريف الجمركة (جديدة)                -> customs (when year >= current)
- *   7  مصاريف الجمركة (أقل من 3 سنوات)       -> customs (when age < 3, not new)
+ *   0  العلامة التجارية          -> brand
+ *   1  الموديل                   -> model
+ *   2  الفئة (Finition)          -> finition
+ *   3  سنة الصنع                 -> manufacture_year
+ *   4  اللون                     -> color
+ *   5  السعر                     -> price
+ *   6  جمركة                    -> customs_fees             (سيارات جديدة: سنة الصنع ≥ السنة الحالية)
+ *   7  جمركة +3                  -> customs_fees_under_three (أقل من 3 سنوات، وليست جديدة)
+ *   8  مدة التجهيز (أيام)        -> preparation_days
+ *   9  مدة الشحن (أيام)          -> shipping_days
  *
  * Row 1 is the header row and is skipped via WithStartRow(2).
  */

@@ -16,36 +16,33 @@ class PreOrderCarResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'supplier_id' => $this->supplier_id,
-            'supplier' => new SupplierMiniResource($this->whenLoaded('supplier')),
-            'container_opener_id' => $this->container_opener_id,
+            'id'                        => $this->id,
+            'brand'                     => $this->brand,
+            'model'                     => $this->model,
+            'finition'                  => $this->finition,
+            'manufacture_year'          => $this->manufacture_year,
+            'color'                     => $this->color,
 
-            'brand' => $this->brand,
-            'model' => $this->model,
-            'finition' => $this->finition,
-            'manufacture_year' => $this->manufacture_year,
-            'color' => $this->color,
+            'price'                     => (float) $this->price,
+            'customs_fees'              => (float) $this->customs_fees,              // جمركة (جديدة)
+            'customs_fees_under_three'  => (float) $this->customs_fees_under_three,  // جمركة +3
+            'preparation_days'          => (int)   $this->preparation_days,          // مدة التجهيز
+            'shipping_days'             => (int)   $this->shipping_days,             // مدة الشحن
 
-            'price' => (float) $this->price,
-            'customs_fees' => (float) $this->customs_fees,
+            'published_at'              => $this->published_at,
+            'is_published'              => $this->published_at !== null,
 
-            'published_at' => $this->published_at,
-            'is_published' => $this->published_at !== null,
-
-            'requests_count' => $this->when(
+            'requests_count'            => $this->when(
                 $this->requests_count !== null,
                 fn () => $this->requests_count
             ),
-            'requests' => PreOrderCarRequestResource::collection($this->whenLoaded('requests')),
+            'requests'                  => PreOrderCarRequestResource::collection($this->whenLoaded('requests')),
 
-            'media' => CarMediaResource::collection($this->whenLoaded('media')),
+            'media'                     => CarMediaResource::collection($this->whenLoaded('media')),
 
-            'notes' => $this->notes,
-            'created_by' => $this->created_by,
-
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_by'                => $this->created_by,
+            'created_at'                => $this->created_at,
+            'updated_at'                => $this->updated_at,
         ];
     }
 }

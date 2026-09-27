@@ -18,15 +18,17 @@ class StorePreOrderCarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'brand' => ['required', 'string', 'max:255'],
-            'model' => ['required', 'string', 'max:255'],
-            'finition' => ['nullable', 'string', 'max:255'],
-            'manufacture_year' => ['required', 'integer', 'min:1980', 'max:' . (date('Y') + 1)],
-            'color' => ['nullable', 'string', 'max:255'],
+            'brand'                    => ['required', 'string', 'max:255'],
+            'model'                    => ['required', 'string', 'max:255'],
+            'finition'                 => ['nullable', 'string', 'max:255'],
+            'manufacture_year'         => ['required', 'integer', 'min:1980', 'max:' . (date('Y') + 1)],
+            'color'                    => ['nullable', 'string', 'max:255'],
 
-            'price' => ['required', 'numeric', 'min:0'],
-            'customs_fees' => ['required', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string'],
+            'price'                    => ['required', 'numeric', 'min:0'],
+            'customs_fees'             => ['required', 'numeric', 'min:0'],              // جمركة (جديدة)
+            'customs_fees_under_three' => ['required', 'numeric', 'min:0'],              // جمركة +3
+            'preparation_days'         => ['required', 'integer', 'min:0'],              // مدة التجهيز
+            'shipping_days'            => ['required', 'integer', 'min:0'],              // مدة الشحن
         ];
     }
 

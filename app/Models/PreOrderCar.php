@@ -12,27 +12,30 @@ class PreOrderCar extends Model
     use HasFactory;
 
     protected $fillable = [
-        'supplier_id',
-        'container_opener_id',
         'brand',
         'model',
         'finition',
         'manufacture_year',
         'color',
         'price',
-        'customs_fees',
+        'customs_fees',              // جمركة — سيارات جديدة (سنة الصنع ≥ السنة الحالية)
+        'customs_fees_under_three',  // جمركة +3 — أقل من 3 سنوات (وليست جديدة)
+        'preparation_days',          // مدة التجهيز (بالأيام)
+        'shipping_days',             // مدة الشحن (بالأيام)
         'published_at',
-        'notes',
         'created_by',
     ];
 
     protected function casts(): array
     {
         return [
-            'price' => 'decimal:2',
-            'customs_fees' => 'decimal:2',
-            'manufacture_year' => 'integer',
-            'published_at' => 'datetime',
+            'price'                    => 'decimal:2',
+            'customs_fees'             => 'decimal:2',
+            'customs_fees_under_three' => 'decimal:2',
+            'manufacture_year'         => 'integer',
+            'preparation_days'         => 'integer',
+            'shipping_days'            => 'integer',
+            'published_at'             => 'datetime',
         ];
     }
 
@@ -50,45 +53,9 @@ class PreOrderCar extends Model
         return $manufactureYear >= self::currentCalendarYear();
     }
 
-    /**
-     * Pick the customs cell that matches the row's manufacture year.
-     *
-     * @throws \RuntimeException
-     */
-    public static function resolveCustomsFees(int $manufactureYear, mixed $customsNew, mixed $customsUnderThree): float
-    {
-        if (! self::isEligibleManufactureYear($manufactureYear)) {
-            throw new \RuntimeException('الطلب المسبق متاح فقط للسيارات الجديدة أو التي عمرها أقل من 3 سنوات');
-        }
-
-        if (self::isNewManufactureYear($manufactureYear)) {
-            if (! is_numeric($customsNew) || (float) $customsNew < 0) {
-                throw new \RuntimeException('مصاريف الجمركة (جديدة) غير صالحة لهذه السنة');
-            }
-
-            return (float) $customsNew;
-        }
-
-        if (! is_numeric($customsUnderThree) || (float) $customsUnderThree < 0) {
-            throw new \RuntimeException('مصاريف الجمركة (أقل من 3 سنوات) غير صالحة لهذه السنة');
-        }
-
-        return (float) $customsUnderThree;
-    }
-
     private static function currentCalendarYear(): int
     {
         return (int) date('Y');
-    }
-
-    public function supplier(): BelongsTo
-    {
-        return $this->belongsTo(Supplier::class);
-    }
-
-    public function containerOpener(): BelongsTo
-    {
-        return $this->belongsTo(ContainerOpener::class);
     }
 
     public function createdByUser(): BelongsTo
@@ -136,7 +103,6 @@ class PreOrderCar extends Model
 
     /**
      * Mark a pending pre-order request as completed (staff approval).
-     * Does not create orders, cars, batches, or link to customers.
      *
      * @throws \RuntimeException
      */
@@ -155,9 +121,9 @@ class PreOrderCar extends Model
         }
 
         $request->update([
-            'status' => PreOrderCarRequest::STATUS_COMPLETED,
-            'decided_by' => $decidedBy,
-            'decided_at' => now(),
+            'status'      => PreOrderCarRequest::STATUS_COMPLETED,
+            'decided_by'  => $decidedBy,
+            'decided_at'  => now(),
         ]);
 
         return $request->fresh(['contact']);

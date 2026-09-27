@@ -18,15 +18,17 @@ class UpdatePreOrderCarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'brand' => ['sometimes', 'required', 'string', 'max:255'],
-            'model' => ['sometimes', 'required', 'string', 'max:255'],
-            'finition' => ['nullable', 'string', 'max:255'],
-            'manufacture_year' => ['sometimes', 'required', 'integer', 'min:1980', 'max:' . (date('Y') + 1)],
-            'color' => ['nullable', 'string', 'max:255'],
+            'brand'                    => ['sometimes', 'required', 'string', 'max:255'],
+            'model'                    => ['sometimes', 'required', 'string', 'max:255'],
+            'finition'                 => ['nullable', 'string', 'max:255'],
+            'manufacture_year'         => ['sometimes', 'required', 'integer', 'min:1980', 'max:' . (date('Y') + 1)],
+            'color'                    => ['nullable', 'string', 'max:255'],
 
-            'price' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'customs_fees' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string'],
+            'price'                    => ['sometimes', 'required', 'numeric', 'min:0'],
+            'customs_fees'             => ['sometimes', 'required', 'numeric', 'min:0'],              // جمركة (جديدة)
+            'customs_fees_under_three' => ['sometimes', 'required', 'numeric', 'min:0'],              // جمركة +3
+            'preparation_days'         => ['sometimes', 'required', 'integer', 'min:0'],              // مدة التجهيز
+            'shipping_days'            => ['sometimes', 'required', 'integer', 'min:0'],              // مدة الشحن
         ];
     }
 
