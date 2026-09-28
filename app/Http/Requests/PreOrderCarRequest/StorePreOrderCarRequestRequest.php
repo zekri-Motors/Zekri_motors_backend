@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\PreOrderCarRequest;
 
-use App\Models\Contact;
+use App\Models\Customer;
 use App\Models\PreOrderCar;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,10 +19,8 @@ class StorePreOrderCarRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'whatsapp_number' => ['required', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{6,20}$/'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string'],
+            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'notes'       => ['nullable', 'string'],
         ];
     }
 
@@ -32,9 +30,8 @@ class StorePreOrderCarRequestRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'اسم جهة الاتصال إلزامي',
-            'whatsapp_number.required' => 'رقم الواتساب إلزامي',
-            'whatsapp_number.regex' => 'رقم الواتساب غير صالح',
+            'customer_id.required' => 'معرّف العميل إلزامي',
+            'customer_id.exists'   => 'العميل المحدد غير موجود في النظام',
         ];
     }
 
@@ -50,16 +47,10 @@ class StorePreOrderCarRequestRequest extends FormRequest
                 return;
             }
 
-            $whatsapp = preg_replace('/[\s\-]/', '', (string) $this->input('whatsapp_number'));
+            $customerId = $this->input('customer_id');
 
-            $contactIds = Contact::query()
-                ->where('whatsapp_number', $this->input('whatsapp_number'))
-                ->orWhere('whatsapp_number', $whatsapp)
-                ->pluck('id');
-
-            if ($contactIds->isNotEmpty()
-                && $preOrderCar->requests()->whereIn('contact_id', $contactIds)->exists()) {
-                $validator->errors()->add('whatsapp_number', 'تم تقديم طلب مسبق على هذه السيارة بهذا الرقم مسبقًا');
+            if ($customerId && $preOrderCar->requests()->where('customer_id', $customerId)->exists()) {
+                $validator->errors()->add('customer_id', 'قدّم هذا العميل طلباً مسبقاً على هذه السيارة مسبقًا');
             }
         });
     }

@@ -5,41 +5,29 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PreOrderCarRequest\StorePreOrderCarRequestRequest;
 use App\Http\Resources\PreOrderCarRequestResource;
-use App\Models\Contact;
 use App\Models\PreOrderCar;
 use App\Models\PreOrderCarRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class PreOrderCarRequestController extends Controller
 {
     /**
-     * Public: submit a pre-order request with contact details (no customer account).
+     * Public: submit a pre-order request linked directly to a customer.
      */
     public function store(StorePreOrderCarRequestRequest $request, PreOrderCar $preOrderCar): JsonResponse
     {
         $validated = $request->validated();
 
-        $carRequest = DB::transaction(function () use ($preOrderCar, $validated) {
-            $contact = Contact::query()->updateOrCreate(
-                ['whatsapp_number' => trim($validated['whatsapp_number'])],
-                [
-                    'name' => $validated['name'],
-                    'address' => $validated['address'] ?? null,
-                ]
-            );
-
-            return $preOrderCar->requests()->create([
-                'contact_id' => $contact->id,
-                'status' => PreOrderCarRequest::STATUS_PENDING,
-                'notes' => $validated['notes'] ?? null,
-            ]);
-        });
+        $carRequest = $preOrderCar->requests()->create([
+            'customer_id' => $validated['customer_id'],
+            'status'      => PreOrderCarRequest::STATUS_PENDING,
+            'notes'       => $validated['notes'] ?? null,
+        ]);
 
         return response()->json([
             'message' => 'تم تسجيل طلبك المسبق على هذه السيارة بنجاح',
-            'data' => new PreOrderCarRequestResource($carRequest->load('contact')),
+            'data'    => new PreOrderCarRequestResource($carRequest->load('customer')),
         ], 201);
     }
 
@@ -50,7 +38,7 @@ class PreOrderCarRequestController extends Controller
     {
         $this->authorize('viewAny', PreOrderCarRequest::class);
 
-        $requests = $preOrderCar->requests()->with('contact')->orderByDesc('id')->get();
+        $requests = $preOrderCar->requests()->with('customer')->orderByDesc('id')->get();
 
         return response()->json(['data' => PreOrderCarRequestResource::collection($requests)]);
     }

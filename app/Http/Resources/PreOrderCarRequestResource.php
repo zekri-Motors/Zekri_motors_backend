@@ -16,13 +16,13 @@ class PreOrderCarRequestResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id'              => $this->id,
             'pre_order_car_id' => $this->pre_order_car_id,
-            'contact_id' => $this->contact_id,
-            'contact' => new ContactResource($this->whenLoaded('contact')),
+            'customer_id'     => $this->customer_id,
+            'customer'        => new CustomerResource($this->whenLoaded('customer')),
 
-            'status' => $this->status,
-            'notes' => $this->notes,
+            'status'    => $this->status,
+            'notes'     => $this->notes,
 
             'decided_by' => $this->decided_by,
             'decided_at' => $this->decided_at,

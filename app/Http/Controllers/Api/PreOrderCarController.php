@@ -51,7 +51,6 @@ class PreOrderCarController extends Controller
         $this->authorize('view', $preOrderCar);
 
         $preOrderCar->load([
-            'supplier',
             'requests.contact',
             'media' => fn ($q) => $q->with('tags')->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
         ]);

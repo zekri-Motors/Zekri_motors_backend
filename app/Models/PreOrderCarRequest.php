@@ -18,7 +18,7 @@ class PreOrderCarRequest extends Model
 
     protected $fillable = [
         'pre_order_car_id',
-        'contact_id',
+        'customer_id',
         'status',
         'notes',
         'decided_by',
@@ -37,9 +37,9 @@ class PreOrderCarRequest extends Model
         return $this->belongsTo(PreOrderCar::class);
     }
 
-    public function contact(): BelongsTo
+    public function customer(): BelongsTo
     {
-        return $this->belongsTo(Contact::class);
+        return $this->belongsTo(Customer::class);
     }
 
     public function decidedByUser(): BelongsTo
@@ -62,3 +62,4 @@ class PreOrderCarRequest extends Model
         return $this->status === self::STATUS_COMPLETED;
     }
 }
+

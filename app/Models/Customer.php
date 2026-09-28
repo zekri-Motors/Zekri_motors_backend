@@ -54,6 +54,14 @@ class Customer extends Model
     }
 
     /**
+     * All pre-order car requests submitted by this customer.
+     */
+    public function preOrderCarRequests(): HasMany
+    {
+        return $this->hasMany(PreOrderCarRequest::class);
+    }
+
+    /**
      * All payments made by this customer (across all their orders).
      */
     public function payments(): HasMany
