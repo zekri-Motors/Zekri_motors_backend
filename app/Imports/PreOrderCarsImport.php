@@ -56,8 +56,8 @@ class PreOrderCarsImport implements WithMultipleSheets
  *   5  السعر                     -> price
  *   6  جمركة                    -> customs_fees             (سيارات جديدة: سنة الصنع ≥ السنة الحالية)
  *   7  جمركة +3                  -> customs_fees_under_three (أقل من 3 سنوات، وليست جديدة)
- *   8  مدة التجهيز (أيام)        -> preparation_days
- *   9  مدة الشحن (أيام)          -> shipping_days
+ *   8  مدة التجهيز                -> preparation_days
+ *   9  مدة الشحن                  -> shipping_days
  *
  * Row 1 is the header row and is skipped via WithStartRow(2).
  */

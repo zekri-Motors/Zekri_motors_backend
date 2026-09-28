@@ -33,8 +33,8 @@ class PreOrderCar extends Model
             'customs_fees'             => 'decimal:2',
             'customs_fees_under_three' => 'decimal:2',
             'manufacture_year'         => 'integer',
-            'preparation_days'         => 'integer',
-            'shipping_days'            => 'integer',
+            'preparation_days'         => 'string',
+            'shipping_days'            => 'string',
             'published_at'             => 'datetime',
         ];
     }

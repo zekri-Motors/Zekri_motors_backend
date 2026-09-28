@@ -108,8 +108,8 @@ class PreOrderCarsImportService
         // نُعالج null كـ 0 للحقول العددية الاختيارية (جمركة، مدة التجهيز، مدة الشحن).
         $customsNew        = $row->get(self::COL_CUSTOMS_NEW)        ?? 0;
         $customsUnderThree = $row->get(self::COL_CUSTOMS_UNDER_THREE) ?? 0;
-        $preparationDays   = $row->get(self::COL_PREPARATION_DAYS)   ?? 0;
-        $shippingDays      = $row->get(self::COL_SHIPPING_DAYS)      ?? 0;
+        $preparationDays   = $row->get(self::COL_PREPARATION_DAYS)   ?? '';
+        $shippingDays      = $row->get(self::COL_SHIPPING_DAYS)      ?? '';
 
         // ── Basic validations ─────────────────────────────────────────────────
 
@@ -143,12 +143,12 @@ class PreOrderCarsImportService
 
         // ── Preparation & shipping days ───────────────────────────────────────
 
-        if (! is_numeric($preparationDays) || (int) $preparationDays < 0) {
-            throw new \RuntimeException('مدة التجهيز (بالأيام) غير صالحة');
+        if (mb_strlen((string) $preparationDays) > 255) {
+            throw new \RuntimeException('مدة التجهيز طويلة جداً (الحد الأقصى 255 حرفاً)');
         }
 
-        if (! is_numeric($shippingDays) || (int) $shippingDays < 0) {
-            throw new \RuntimeException('مدة الشحن (بالأيام) غير صالحة');
+        if (mb_strlen((string) $shippingDays) > 255) {
+            throw new \RuntimeException('مدة الشحن طويلة جداً (الحد الأقصى 255 حرفاً)');
         }
 
         // ── Persist ───────────────────────────────────────────────────────────
@@ -162,8 +162,8 @@ class PreOrderCarsImportService
             'price'                    => (float) $price,
             'customs_fees'             => (float) $customsNew,
             'customs_fees_under_three' => (float) $customsUnderThree,
-            'preparation_days'         => (int) $preparationDays,
-            'shipping_days'            => (int) $shippingDays,
+            'preparation_days'         => (string) $preparationDays,
+            'shipping_days'            => (string) $shippingDays,
             'created_by'               => $createdBy,
         ]);
     }

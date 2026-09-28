@@ -27,8 +27,8 @@ class StorePreOrderCarRequest extends FormRequest
             'price'                    => ['required', 'numeric', 'min:0'],
             'customs_fees'             => ['required', 'numeric', 'min:0'],              // جمركة (جديدة)
             'customs_fees_under_three' => ['required', 'numeric', 'min:0'],              // جمركة +3
-            'preparation_days'         => ['required', 'integer', 'min:0'],              // مدة التجهيز
-            'shipping_days'            => ['required', 'integer', 'min:0'],              // مدة الشحن
+            'preparation_days'         => ['required', 'string', 'max:255'],              // مدة التجهيز
+            'shipping_days'            => ['required', 'string', 'max:255'],              // مدة الشحن
         ];
     }
 

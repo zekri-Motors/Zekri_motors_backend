@@ -22,7 +22,6 @@ class PreOrderCarController extends Controller
 
         $cars = PreOrderCar::query()
             ->with([
-                'supplier',
                 'media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
             ])
             ->withCount('requests')

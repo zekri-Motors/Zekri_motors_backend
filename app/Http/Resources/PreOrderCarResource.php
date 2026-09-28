@@ -26,8 +26,8 @@ class PreOrderCarResource extends JsonResource
             'price'                     => (float) $this->price,
             'customs_fees'              => (float) $this->customs_fees,              // جمركة (جديدة)
             'customs_fees_under_three'  => (float) $this->customs_fees_under_three,  // جمركة +3
-            'preparation_days'          => (int)   $this->preparation_days,          // مدة التجهيز
-            'shipping_days'             => (int)   $this->shipping_days,             // مدة الشحن
+            'preparation_days'          => $this->preparation_days,          // مدة التجهيز
+            'shipping_days'             => $this->shipping_days,             // مدة الشحن
 
             'published_at'              => $this->published_at,
             'is_published'              => $this->published_at !== null,

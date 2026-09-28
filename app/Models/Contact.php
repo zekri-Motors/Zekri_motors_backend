@@ -13,7 +13,9 @@ class Contact extends Model
     protected $fillable = [
         'name',
         'whatsapp_number',
+        'phone',
         'address',
+        'google_map_link',
     ];
 
     public function preOrderCarRequests(): HasMany

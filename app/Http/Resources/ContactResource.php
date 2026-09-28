@@ -19,7 +19,9 @@ class ContactResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'whatsapp_number' => $this->whatsapp_number,
+            'phone' => $this->phone,
             'address' => $this->address,
+            'google_map_link' => $this->google_map_link,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

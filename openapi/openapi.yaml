@@ -139,7 +139,9 @@ components:
       properties:
         name: { type: string }
         whatsapp_number: { type: string, example: "+213 555 12 34 56" }
+        phone: { type: string, nullable: true, example: "+213 555 98 76 54" }
         address: { type: string, nullable: true }
+        google_map_link: { type: string, format: uri, nullable: true, example: "https://maps.google.com/?q=..." }
     BatchRequest:
       type: object
       required: [supplier_id]
