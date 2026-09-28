@@ -17,6 +17,22 @@ class CarMediaResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'vehicle_type' => $this->car_id !== null ? 'car' : 'pre_order_car',
+            'vehicle_id' => $this->car_id ?? $this->pre_order_car_id,
+            'vehicle' => $this->when(
+                $this->relationLoaded('car') || $this->relationLoaded('preOrderCar'),
+                function () {
+                    $vehicle = $this->car_id !== null ? $this->car : $this->preOrderCar;
+
+                    return $vehicle ? [
+                        'id' => $vehicle->id,
+                        'brand' => $vehicle->brand,
+                        'model' => $vehicle->model,
+                        'manufacture_year' => $vehicle->manufacture_year,
+                        'vin' => $vehicle instanceof \App\Models\Car ? $vehicle->vin : null,
+                    ] : null;
+                }
+            ),
             'car_id' => $this->car_id,
             'car' => $this->whenLoaded('car', fn () => [
                 'id' => $this->car->id,
@@ -24,6 +40,13 @@ class CarMediaResource extends JsonResource
                 'model' => $this->car->model,
                 'manufacture_year' => $this->car->manufacture_year,
                 'vin' => $this->car->vin,
+            ]),
+            'pre_order_car_id' => $this->pre_order_car_id,
+            'pre_order_car' => $this->whenLoaded('preOrderCar', fn () => [
+                'id' => $this->preOrderCar->id,
+                'brand' => $this->preOrderCar->brand,
+                'model' => $this->preOrderCar->model,
+                'manufacture_year' => $this->preOrderCar->manufacture_year,
             ]),
 
             'type' => $this->type,

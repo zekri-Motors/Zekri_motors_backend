@@ -575,8 +575,14 @@ paths:
     parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
     get: { tags: [CarMedia], summary: List media for a car, parameters: [{ name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string }, description: Comma separated tag names }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post: { tags: [CarMedia], summary: Upload/link media to car, requestBody: { $ref: '#/components/requestBodies/MediaUpload' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /pre-order-cars/{preOrderCar}/media:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
+    get: { tags: [CarMedia], summary: List media for a pre-order car, parameters: [{ name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string }, description: Comma separated tag names }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    post: { tags: [CarMedia], summary: Upload/link media to a pre-order car, requestBody: { $ref: '#/components/requestBodies/MediaUpload' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /car-media/search:
-    get: { tags: [CarMedia], summary: Search car media globally, parameters: [{ name: car_name, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    get: { tags: [CarMedia], summary: Search media for regular and pre-order cars globally, parameters: [{ name: car_name, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+  /car-media:
+    get: { tags: [CarMedia], summary: List all media for regular and pre-order cars, parameters: [{ name: car_name, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /car-media/{carMedia}:
     parameters: [{ name: carMedia, in: path, required: true, schema: { type: integer } }]
     put: { tags: [CarMedia], summary: Update car media metadata/tags, requestBody: { $ref: '#/components/requestBodies/JsonMediaUpdate' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }

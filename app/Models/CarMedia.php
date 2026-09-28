@@ -25,7 +25,6 @@ class CarMedia extends Model
         'url',
         'disk',
         'path',
-        'mime_type',
         'uploaded_by',
     ];
 

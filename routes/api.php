@@ -256,8 +256,13 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
         Route::post('/', [CarMediaController::class, 'store']);
     });
 
+    Route::prefix('pre-order-cars/{preOrderCar}/media')->group(function () {
+        Route::get('/', [CarMediaController::class, 'preOrderIndex']);
+        Route::post('/', [CarMediaController::class, 'storeForPreOrder']);
+    });
+
     Route::prefix('car-media')->group(function () {
-        // لازم قبل أي مسار GET /car-media/{id} إذا أضفت show() لاحقًا.
+        Route::get('/', [CarMediaController::class, 'all']);
         Route::get('/search', [CarMediaController::class, 'search']);
         Route::put('/{carMedia}', [CarMediaController::class, 'update']);
         Route::delete('/{carMedia}', [CarMediaController::class, 'destroy']);
