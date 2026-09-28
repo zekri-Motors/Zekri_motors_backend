@@ -18,7 +18,6 @@ class PreOrderCarController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', PreOrderCar::class);
 
         $cars = PreOrderCar::query()
             ->with([

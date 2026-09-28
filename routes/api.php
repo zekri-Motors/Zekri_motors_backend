@@ -243,6 +243,6 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
 
     Route::apiResource('tags', TagController::class);
 
-    Route::apiResource('contacts', ContactController::class);
-
 });
+
+Route::apiResource('contacts', ContactController::class);

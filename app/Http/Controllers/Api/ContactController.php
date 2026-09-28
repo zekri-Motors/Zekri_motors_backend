@@ -14,7 +14,6 @@ class ContactController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $this->authorize('viewAny', Contact::class);
 
         $contacts = Contact::query()
             ->when($request->filled('search'), fn ($q) => $q->where('name', 'like', '%' . $request->string('search') . '%'))
@@ -36,7 +35,6 @@ class ContactController extends Controller
 
     public function show(Contact $contact): JsonResponse
     {
-        $this->authorize('view', $contact);
 
         return response()->json(['data' => new ContactResource($contact)]);
     }
@@ -53,8 +51,6 @@ class ContactController extends Controller
 
     public function destroy(Contact $contact): JsonResponse
     {
-        $this->authorize('delete', $contact);
-
         $contact->delete();
 
         return response()->json(['message' => 'تم حذف جهة الاتصال بنجاح']);
