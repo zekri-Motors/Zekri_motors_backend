@@ -97,6 +97,7 @@ Route::middleware('throttle:lookup')->post(
 
 // Public catalogue - NO auth token required.
 Route::get('cars/available', [CarController::class, 'available']);
+Route::get('pre-order-cars/', [PreOrderCarController::class, 'index']);
 
 Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
 
@@ -202,7 +203,7 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
     Route::apiResource('settings', SettingController::class);
 
     Route::prefix('pre-order-cars')->group(function () {
-        Route::get('/', [PreOrderCarController::class, 'index']);
+        
         Route::post('/', [PreOrderCarController::class, 'store']);
 
         // لازم قبل {preOrderCar} حتى ما يتعارض مع أي مسار GET/POST مشابه لاحقًا.
