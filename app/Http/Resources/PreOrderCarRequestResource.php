@@ -17,14 +17,25 @@ class PreOrderCarRequestResource extends JsonResource
     {
         return [
             'id'              => $this->id,
+
+            // السيارة المرتبطة
             'pre_order_car_id' => $this->pre_order_car_id,
-            'customer_id'     => $this->customer_id,
-            'customer'        => new CustomerResource($this->whenLoaded('customer')),
+            'pre_order_car'    => new PreOrderCarResource($this->whenLoaded('preOrderCar')),
 
-            'status'    => $this->status,
-            'notes'     => $this->notes,
+            // العميل
+            'customer_id' => $this->customer_id,
+            'customer'    => new CustomerResource($this->whenLoaded('customer')),
 
-            'decided_by' => $this->decided_by,
+            // الحالة والملاحظات
+            'status' => $this->status,
+            'notes'  => $this->notes,
+
+            // معلومات الموافقة
+            'decided_by'      => $this->decided_by,
+            'decided_by_user' => $this->whenLoaded('decidedByUser', fn () => [
+                'id'   => $this->decidedByUser->id,
+                'name' => $this->decidedByUser->name,
+            ]),
             'decided_at' => $this->decided_at,
 
             'created_at' => $this->created_at,

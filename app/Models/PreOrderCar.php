@@ -64,7 +64,7 @@ class PreOrderCar extends Model
     }
 
     /**
-     * Contact-based pre-order requests for this catalog model.
+     * Customer pre-order requests for this catalog model.
      */
     public function requests(): HasMany
     {
@@ -126,6 +126,6 @@ class PreOrderCar extends Model
             'decided_at'  => now(),
         ]);
 
-        return $request->fresh(['contact']);
+        return $request->fresh(['customer']);
     }
 }

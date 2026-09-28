@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Zekri Motors Backend API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     ملف OpenAPI محدث حسب routes/api.php الحالي لاستخدامه في Bruno أو أي API client.
 
@@ -49,6 +49,8 @@ tags:
   - name: Users
   - name: Settings
   - name: PreOrderCars
+  - name: PreOrderCarRequests
+    description: طلبات العملاء المسبقة — CRUD كامل مع بحث بالعميل والسيارة والحالة
   - name: Documents
 
 x-bruno:
@@ -237,7 +239,72 @@ components:
         color: { type: string, nullable: true }
         price: { type: number }
         customs_fees: { type: number }
+        customs_fees_under_three: { type: number, nullable: true }
+        preparation_days: { type: string, nullable: true }
+        shipping_days: { type: string, nullable: true }
+    # ── طلبات العملاء المسبقة ─────────────────────────────────────────
+    PreOrderCarRequestBody:
+      type: object
+      required: [customer_id]
+      properties:
+        customer_id: { type: integer, description: معرّف العميل في النظام }
         notes: { type: string, nullable: true }
+    PreOrderCarRequestBodyDirect:
+      description: لإنشاء طلب من المسار المسطّح — يتضمن pre_order_car_id كحقل في الجسم
+      type: object
+      required: [pre_order_car_id, customer_id]
+      properties:
+        pre_order_car_id: { type: integer, description: معرّف سيارة الطلب المسبق }
+        customer_id: { type: integer, description: معرّف العميل في النظام }
+        notes: { type: string, nullable: true }
+    PreOrderCarRequestUpdateBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, pending, completed]
+          description: "draft = مسودة | pending = قيد الانتظار | completed = مكتمل"
+        customer_id: { type: integer, nullable: true, description: "ممنوع تغييره إذا كان الطلب completed" }
+        notes: { type: string, nullable: true }
+    PreOrderCarRequestResource:
+      type: object
+      properties:
+        id: { type: integer }
+        pre_order_car_id: { type: integer }
+        pre_order_car:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            brand: { type: string }
+            model: { type: string }
+            finition: { type: string, nullable: true }
+            manufacture_year: { type: integer }
+            color: { type: string, nullable: true }
+            price: { type: number }
+            is_published: { type: boolean }
+        customer_id: { type: integer }
+        customer:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            phone: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [draft, pending, completed]
+        notes: { type: string, nullable: true }
+        decided_by: { type: integer, nullable: true }
+        decided_by_user:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+        decided_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     MediaUpdateRequest:
       type: object
       properties:
@@ -261,6 +328,9 @@ components:
     JsonCustomerPayment: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CustomerPaymentRequest' } } } }
     JsonAgentTransaction: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AgentTransactionRequest' } } } }
     JsonPreOrderCar: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequest' } } } }
+    JsonPreOrderCarRequestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequestBody' } } } }
+    JsonPreOrderCarRequestBodyDirect: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequestBodyDirect' } } } }
+    JsonPreOrderCarRequestUpdateBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequestUpdateBody' } } } }
     JsonMediaUpdate: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/MediaUpdateRequest' } } } }
     BatchImport:
       required: true
@@ -826,52 +896,253 @@ paths:
   /pre-order-cars:
     get:
       tags: [PreOrderCars]
-      summary: List pre-order cars
+      summary: List pre-order cars (public — no auth required)
+      security: []
       parameters:
-        - { name: status, in: query, schema: { type: string, enum: [draft, pending, completed] } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, pending] }, description: "draft = مسودة | pending = منشورة" }
         - { name: supplier_id, in: query, schema: { type: integer } }
         - { $ref: '#/components/parameters/PerPage' }
+        - { $ref: '#/components/parameters/Page' }
       responses: { '200': { $ref: '#/components/responses/Ok' } }
-    post: { tags: [PreOrderCars], summary: Create pre-order car draft, requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCar' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
-  /pre-order-cars/import:
-    post: { tags: [PreOrderCars], summary: Import pre-order cars from xlsx/xls/csv, requestBody: { $ref: '#/components/requestBodies/PreOrderImport' }, responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } } }
-  /pre-order-cars/{preOrderCar}:
-    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
-    get: { tags: [PreOrderCars], summary: Show pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
-    put: { tags: [PreOrderCars], summary: Update pre-order car, requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCar' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
-    delete: { tags: [PreOrderCars], summary: Delete pre-order car, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
-  /pre-order-cars/{preOrderCar}/publish:
-    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
-    post: { tags: [PreOrderCars], summary: Publish draft pre-order car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
-  /pre-order-cars/{preOrderCar}/requests:
-    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
-    get: { tags: [PreOrderCars], summary: List contact-based pre-order requests for a car, responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post:
       tags: [PreOrderCars]
-      summary: Submit public pre-order request (registers contact; no customer account)
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, whatsapp_number]
-              properties:
-                name: { type: string }
-                whatsapp_number: { type: string }
-                address: { type: string, nullable: true }
-                notes: { type: string, nullable: true }
-      responses: { '201': { $ref: '#/components/responses/Created' } }
+      summary: Create pre-order car draft (staff only)
+      requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCar' }
+      responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /pre-order-cars/import:
+    post:
+      tags: [PreOrderCars]
+      summary: Import pre-order cars from xlsx/xls/csv (staff only)
+      requestBody: { $ref: '#/components/requestBodies/PreOrderImport' }
+      responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /pre-order-cars/{preOrderCar}:
+    parameters:
+      - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
+    get: { tags: [PreOrderCars], summary: Show pre-order car with its requests and media, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    put: { tags: [PreOrderCars], summary: Update pre-order car, requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCar' }, responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    delete: { tags: [PreOrderCars], summary: Delete pre-order car (blocked if has requests), responses: { '200': { $ref: '#/components/responses/Deleted' }, '422': { $ref: '#/components/responses/ValidationError' } } }
+  /pre-order-cars/{preOrderCar}/publish:
+    parameters:
+      - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
+    post: { tags: [PreOrderCars], summary: Publish draft pre-order car (makes it visible to customers), responses: { '200': { $ref: '#/components/responses/Ok' }, '422': { $ref: '#/components/responses/ValidationError' } } }
+
+  # ── طلبات العملاء المسبقة — المسارات المتداخلة (/pre-order-cars/{car}/requests/...) ──────
+  /pre-order-cars/{preOrderCar}/requests:
+    parameters:
+      - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [PreOrderCarRequests]
+      summary: List requests for a specific car with search & filter
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [draft, pending, completed] } }
+        - { name: customer_id, in: query, schema: { type: integer }, description: فلتر بمعرّف العميل }
+        - { name: search, in: query, schema: { type: string }, description: بحث باسم أو هاتف العميل }
+        - { $ref: '#/components/parameters/PerPage' }
+        - { $ref: '#/components/parameters/Page' }
+      responses:
+        '200':
+          description: Paginated list of requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+                  meta:
+                    type: object
+                    properties:
+                      current_page: { type: integer }
+                      last_page: { type: integer }
+                      per_page: { type: integer }
+                      total: { type: integer }
+    post:
+      tags: [PreOrderCarRequests]
+      summary: Create a pre-order request for a specific car (staff only)
+      description: |
+        السيارة يجب أن تكون منشورة (published_at ≠ null)، والطلب يتطلب customer_id موجودًا في النظام.
+        لا يمكن لنفس العميل تقديم طلبين على نفس السيارة.
+      requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCarRequestBody' }
+      responses:
+        '201':
+          description: Request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}:
-    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
-    delete: { tags: [PreOrderCars], summary: Cancel pending pre-order request, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
+    parameters:
+      - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
+      - { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [PreOrderCarRequests]
+      summary: Show a single pre-order request (nested route)
+      responses:
+        '200':
+          description: Request details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+        '422': { description: Request does not belong to this car }
+    put:
+      tags: [PreOrderCarRequests]
+      summary: Update request (notes / customer / status)
+      description: تغيير customer_id ممنوع إذا كانت الحالة completed.
+      requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCarRequestUpdateBody' }
+      responses: { '200': { $ref: '#/components/responses/Ok' }, '422': { $ref: '#/components/responses/ValidationError' } }
+    delete:
+      tags: [PreOrderCarRequests]
+      summary: Delete request (only allowed while status = pending)
+      responses: { '200': { $ref: '#/components/responses/Deleted' }, '422': { $ref: '#/components/responses/ValidationError' } }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/approve:
-    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
-    post: { tags: [PreOrderCars], summary: Approve pre-order request (status only — no order/car/batch), responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    parameters:
+      - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
+      - { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [PreOrderCarRequests]
+      summary: Approve request → status becomes completed
+      responses: { '200': { $ref: '#/components/responses/Ok' }, '422': { $ref: '#/components/responses/ValidationError' } }
   /pre-order-cars/{preOrderCar}/requests/{preOrderCarRequest}/reject:
-    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }]
-    post: { tags: [PreOrderCars], summary: Reject pre-order request (disabled — all requests are approved individually), responses: { '422': { $ref: '#/components/responses/ValidationError' } } }
+    parameters:
+      - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
+      - { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [PreOrderCarRequests]
+      summary: Reject request (currently disabled — always returns 422)
+      responses: { '422': { $ref: '#/components/responses/ValidationError' } }
+
+  # ── طلبات العملاء المسبقة — المسارات المسطّحة (/pre-order-car-requests) ─────────────────
+  /pre-order-car-requests:
+    get:
+      tags: [PreOrderCarRequests]
+      summary: List & search ALL pre-order requests across all cars
+      description: |
+        بحث شامل عبر كل الطلبات المسبقة بغض النظر عن السيارة.
+        يمكن الجمع بين أي عدد من معاملات الفلترة والبحث.
+      parameters:
+        - { name: customer_id, in: query, schema: { type: integer }, description: فلتر مباشر بمعرّف العميل }
+        - { name: pre_order_car_id, in: query, schema: { type: integer }, description: فلتر مباشر بمعرّف السيارة }
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, pending, completed]
+          description: "draft = مسودة | pending = قيد الانتظار | completed = مكتمل"
+        - name: search
+          in: query
+          schema: { type: string }
+          description: |
+            بحث نصي حر يشمل:
+            - اسم العميل أو رقم هاتفه
+            - ماركة السيارة أو موديلها أو finition
+        - { $ref: '#/components/parameters/PerPage' }
+        - { $ref: '#/components/parameters/Page' }
+      responses:
+        '200':
+          description: Paginated list of pre-order requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+                  meta:
+                    type: object
+                    properties:
+                      current_page: { type: integer }
+                      last_page: { type: integer }
+                      per_page: { type: integer }
+                      total: { type: integer }
+    post:
+      tags: [PreOrderCarRequests]
+      summary: Create a pre-order request (flat route — car ID in body)
+      description: |
+        إنشاء طلب مسبق جديد من المسار المسطّح.
+        يجب إرسال `pre_order_car_id` كحقل في جسم الطلب.
+        السيارة يجب أن تكون منشورة (published).
+        لا يمكن لنفس العميل تقديم طلبين على نفس السيارة.
+      requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCarRequestBodyDirect' }
+      responses:
+        '201':
+          description: Request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /pre-order-car-requests/{preOrderCarRequest}:
+    parameters:
+      - { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [PreOrderCarRequests]
+      summary: Show a single pre-order request (flat route — no car ID needed)
+      responses:
+        '200':
+          description: Request details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [PreOrderCarRequests]
+      summary: Update request (flat route)
+      description: تغيير `customer_id` ممنوع إذا كانت الحالة `completed`.
+      requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCarRequestUpdateBody' }
+      responses:
+        '200':
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [PreOrderCarRequests]
+      summary: Delete request (flat route — only allowed while status = pending)
+      responses:
+        '200': { $ref: '#/components/responses/Deleted' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /pre-order-car-requests/{preOrderCarRequest}/approve:
+    parameters:
+      - { name: preOrderCarRequest, in: path, required: true, schema: { type: integer } }
+    post:
+      tags: [PreOrderCarRequests]
+      summary: Approve request (flat route) → status becomes completed
+      description: |
+        يتحقق من أن السيارة المرتبطة بالطلب منشورة وأن حالة الطلب pending.
+        يسجّل معرّف المستخدم الذي وافق (decided_by) وتاريخ الموافقة (decided_at).
+      responses:
+        '200':
+          description: Approved request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data: { $ref: '#/components/schemas/PreOrderCarRequestResource' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /contacts:
     get: { tags: [Contacts], summary: List contacts, parameters: [{ $ref: '#/components/parameters/Search' }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post: { tags: [Contacts], summary: Create contact, requestBody: { $ref: '#/components/requestBodies/JsonContact' }, responses: { '201': { $ref: '#/components/responses/Created' } } }

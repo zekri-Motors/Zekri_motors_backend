@@ -202,8 +202,28 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
     // إعدادات النظام العامة
     Route::apiResource('settings', SettingController::class);
 
+    // ------------------------------------------------------------------
+    // تاسعًا: الطلبات المسبقة (سيارات الكتالوج + طلبات العملاء)
+    // ------------------------------------------------------------------
+
+    // ── مسارات مسطّحة (flat) على /pre-order-car-requests ──────────────
+    // GET    /pre-order-car-requests                  — قائمة + بحث شامل
+    //   query: customer_id, pre_order_car_id, status, search, per_page
+    // POST   /pre-order-car-requests                  — إنشاء طلب جديد
+    // GET    /pre-order-car-requests/{id}             — تفاصيل طلب
+    // PUT    /pre-order-car-requests/{id}             — تعديل طلب
+    // DELETE /pre-order-car-requests/{id}             — حذف طلب
+    // POST   /pre-order-car-requests/{id}/approve     — الموافقة على طلب
+    // ------------------------------------------------------------------
+    Route::get('pre-order-car-requests',                                [PreOrderCarRequestController::class, 'allRequests']);
+    Route::post('pre-order-car-requests',                               [PreOrderCarRequestController::class, 'storeDirect']);
+    Route::get('pre-order-car-requests/{preOrderCarRequest}',           [PreOrderCarRequestController::class, 'showDirect']);
+    Route::put('pre-order-car-requests/{preOrderCarRequest}',           [PreOrderCarRequestController::class, 'updateDirect']);
+    Route::delete('pre-order-car-requests/{preOrderCarRequest}',        [PreOrderCarRequestController::class, 'destroyDirect']);
+    Route::post('pre-order-car-requests/{preOrderCarRequest}/approve',  [PreOrderCarRequestController::class, 'approveDirect']);
+
     Route::prefix('pre-order-cars')->group(function () {
-        
+
         Route::post('/', [PreOrderCarController::class, 'store']);
 
         // لازم قبل {preOrderCar} حتى ما يتعارض مع أي مسار GET/POST مشابه لاحقًا.
@@ -214,12 +234,21 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
         Route::delete('/{preOrderCar}', [PreOrderCarController::class, 'destroy']);
         Route::post('/{preOrderCar}/publish', [PreOrderCarController::class, 'publish']);
 
-        // طلبات العملاء على سيارة معيّنة (open request)
-        Route::get('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'index']);
-        Route::post('/{preOrderCar}/requests', [PreOrderCarRequestController::class, 'store']);
+        // ── مسارات متداخلة (nested) /pre-order-cars/{car}/requests/... ──
+        // GET    /{car}/requests                        — طلبات سيارة معيّنة + بحث
+        // POST   /{car}/requests                        — إنشاء طلب على سيارة
+        // GET    /{car}/requests/{req}                  — تفاصيل طلب
+        // PUT    /{car}/requests/{req}                  — تعديل طلب
+        // DELETE /{car}/requests/{req}                  — حذف طلب
+        // POST   /{car}/requests/{req}/approve          — الموافقة على الطلب
+        // POST   /{car}/requests/{req}/reject           — رفض (غير مدعوم حاليًا)
+        Route::get('/{preOrderCar}/requests',                               [PreOrderCarRequestController::class, 'index']);
+        Route::post('/{preOrderCar}/requests',                              [PreOrderCarRequestController::class, 'store']);
+        Route::get('/{preOrderCar}/requests/{preOrderCarRequest}',          [PreOrderCarRequestController::class, 'show']);
+        Route::put('/{preOrderCar}/requests/{preOrderCarRequest}',          [PreOrderCarRequestController::class, 'update']);
+        Route::delete('/{preOrderCar}/requests/{preOrderCarRequest}',       [PreOrderCarRequestController::class, 'destroy']);
         Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/approve', [PreOrderCarRequestController::class, 'approve']);
-        Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/reject', [PreOrderCarRequestController::class, 'reject']);
-        Route::delete('/{preOrderCar}/requests/{preOrderCarRequest}', [PreOrderCarRequestController::class, 'destroy']);
+        Route::post('/{preOrderCar}/requests/{preOrderCarRequest}/reject',  [PreOrderCarRequestController::class, 'reject']);
     });
 
     Route::prefix('cars/{car}/media')->group(function () {
@@ -244,6 +273,6 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
 
     Route::apiResource('tags', TagController::class);
 
-});
+    Route::apiResource('contacts', ContactController::class);
 
-Route::apiResource('contacts', ContactController::class);
+});

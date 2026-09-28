@@ -32,21 +32,21 @@ class UpdatePreOrderCarRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            if (! $this->has('manufacture_year')) {
-                return;
-            }
+    // public function withValidator($validator): void
+    // {
+    //     $validator->after(function ($validator) {
+    //         if (! $this->has('manufacture_year')) {
+    //             return;
+    //         }
 
-            $year = (int) $this->input('manufacture_year');
+    //         $year = (int) $this->input('manufacture_year');
 
-            if (! PreOrderCar::isEligibleManufactureYear($year)) {
-                $validator->errors()->add(
-                    'manufacture_year',
-                    'الطلب المسبق متاح فقط للسيارات الجديدة أو التي عمرها أقل من 3 سنوات'
-                );
-            }
-        });
-    }
+    //         if (! PreOrderCar::isEligibleManufactureYear($year)) {
+    //             $validator->errors()->add(
+    //                 'manufacture_year',
+    //                 'الطلب المسبق متاح فقط للسيارات الجديدة أو التي عمرها أقل من 3 سنوات'
+    //             );
+    //         }
+    //     });
+    // }
 }
