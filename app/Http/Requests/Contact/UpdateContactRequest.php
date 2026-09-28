@@ -6,10 +6,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateContactRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()->can('update', $this->route('contact'));
-    }
+    // public function authorize(): bool
+    // {
+    //     return $this->user()->can('update', $this->route('contact'));
+    // }
 
     /**
      * @return array<string, mixed>

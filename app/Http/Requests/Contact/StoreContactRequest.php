@@ -7,10 +7,10 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreContactRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return $this->user()->can('create', Contact::class);
-    }
+    // public function authorize(): bool
+    // {
+    //     return $this->user()->can('create', Contact::class);
+    // }
 
     /**
      * @return array<string, mixed>
