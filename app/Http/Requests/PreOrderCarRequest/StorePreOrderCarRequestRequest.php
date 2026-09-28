@@ -40,16 +40,10 @@ class StorePreOrderCarRequestRequest extends FormRequest
         $validator->after(function ($validator) {
             /** @var PreOrderCar|null $preOrderCar */
             $preOrderCar = $this->route('preOrderCar');
-
-            if (! $preOrderCar || ! $preOrderCar->isPending()) {
-                $validator->errors()->add('pre_order_car', 'هذه السيارة غير متاحة للطلب المسبق حاليًا');
-
-                return;
-            }
-
             $customerId = $this->input('customer_id');
 
-            if ($customerId && $preOrderCar->requests()->where('customer_id', $customerId)->exists()) {
+            if ($customerId && $preOrderCar instanceof PreOrderCar
+                && $preOrderCar->requests()->where('customer_id', $customerId)->exists()) {
                 $validator->errors()->add('customer_id', 'قدّم هذا العميل طلباً مسبقاً على هذه السيارة مسبقًا');
             }
         });

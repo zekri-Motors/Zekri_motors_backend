@@ -54,13 +54,8 @@ class StorePreOrderCarRequestDirectRequest extends FormRequest
 
             /** @var PreOrderCar|null $preOrderCar */
             $preOrderCar = PreOrderCar::find($preOrderCarId);
-
-            if (! $preOrderCar || ! $preOrderCar->isPending()) {
-                $validator->errors()->add('pre_order_car_id', 'هذه السيارة غير متاحة للطلب المسبق حاليًا');
-                return;
-            }
-
-            if ($customerId && $preOrderCar->requests()->where('customer_id', $customerId)->exists()) {
+            if ($customerId && $preOrderCar instanceof PreOrderCar
+                && $preOrderCar->requests()->where('customer_id', $customerId)->exists()) {
                 $validator->errors()->add('customer_id', 'قدّم هذا العميل طلباً مسبقاً على هذه السيارة مسبقًا');
             }
         });
