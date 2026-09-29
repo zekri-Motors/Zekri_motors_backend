@@ -168,6 +168,13 @@ class CarMediaController extends Controller
     {
         $this->authorize('viewAny', CarMedia::class);
 
+        $request->validate([
+            'tags'   => ['sometimes'],
+            'tags.*' => ['string'],
+        ]);
+
+        $tags = $this->normalizeTags($request->input('tags'));
+
         $media = CarMedia::query()
             ->with([
                 'car:id,brand,model,manufacture_year,vin',
@@ -186,15 +193,32 @@ class CarMediaController extends Controller
                     });
                 });
             })
-            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
-            ->when($request->filled('tags'), fn ($q) => $q->whereHas(
+            ->when($request->filled('type'), fn($q) => $q->where('type', $request->string('type')))
+            ->when(! empty($tags), fn($q) => $q->whereHas(
                 'tags',
-                fn ($tq) => $tq->whereIn('name', $this->parseTags($request->string('tags')))
+                fn($tq) => $tq->whereIn('name', $tags)
             ))
             ->orderByDesc('id')
             ->paginate($request->integer('per_page', 20));
 
         return response()->json(CarMediaResource::collection($media)->response()->getData(true));
+    }
+
+    /**
+     * يقبل مصفوفة أو نص مفصول بفواصل ويعيد مصفوفة نظيفة وفريدة.
+     */
+    private function normalizeTags(mixed $tags): array
+    {
+        if (is_string($tags)) {
+            $tags = explode(',', $tags);
+        }
+
+        return collect((array) $tags)
+            ->map(fn($tag) => trim((string) $tag))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
@@ -205,8 +229,8 @@ class CarMediaController extends Controller
     private function parseTags(string $raw): array
     {
         return collect(explode(',', $raw))
-            ->map(fn ($tag) => trim($tag))
-            ->filter(fn ($tag) => $tag !== '')
+            ->map(fn($tag) => trim($tag))
+            ->filter(fn($tag) => $tag !== '')
             ->values()
             ->all();
     }
