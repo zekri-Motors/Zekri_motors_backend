@@ -108,9 +108,9 @@ class PreOrderCar extends Model
      */
     public function approveRequest(PreOrderCarRequest $request, int $decidedBy): PreOrderCarRequest
     {
-        if (! $this->isPending()) {
-            throw new \RuntimeException('سيارة الطلب المسبق ليست متاحة للموافقة على الطلبات');
-        }
+        // if (! $this->isPending()) {
+        //     throw new \RuntimeException('سيارة الطلب المسبق ليست متاحة للموافقة على الطلبات');
+        // }
 
         if ($request->pre_order_car_id !== $this->id) {
             throw new \RuntimeException('هذا الطلب لا يخص سيارة الطلب المسبق هذه');
