@@ -54,7 +54,9 @@ return new class extends Migration
         // حذف عمود contact_id وإضافة customer_id
         Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->dropColumn('contact_id');
+        });
 
+        Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->foreignId('customer_id')
                 ->after('pre_order_car_id')
                 ->constrained('customers')
@@ -108,7 +110,9 @@ return new class extends Migration
         // العودة لـ contact_id
         Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->dropColumn('customer_id');
+        });
 
+        Schema::table('pre_order_car_requests', function (Blueprint $table) {
             $table->foreignId('contact_id')
                 ->after('pre_order_car_id')
                 ->constrained('contacts')

@@ -72,6 +72,9 @@ return new class extends Migration
 
         Schema::table('pre_order_car_requests', function (Blueprint $table): void {
             $table->dropColumn('contact_id');
+        });
+
+        Schema::table('pre_order_car_requests', function (Blueprint $table): void {
             $table->foreignId('customer_id')
                 ->after('pre_order_car_id')
                 ->constrained('customers')

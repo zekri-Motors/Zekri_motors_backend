@@ -228,6 +228,7 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
 
         // لازم قبل {preOrderCar} حتى ما يتعارض مع أي مسار GET/POST مشابه لاحقًا.
         Route::post('/import', [PreOrderCarController::class, 'import']);
+        Route::patch('/bulk-update', [PreOrderCarController::class, 'bulkUpdate']);
 
         Route::get('/{preOrderCar}', [PreOrderCarController::class, 'show']);
         Route::put('/{preOrderCar}', [PreOrderCarController::class, 'update']);

@@ -6,12 +6,14 @@ use App\Exceptions\PreOrderCarsImportFailedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PreOrderCar\ImportPreOrderCarsRequest;
 use App\Http\Requests\PreOrderCar\StorePreOrderCarRequest;
+use App\Http\Requests\PreOrderCar\BulkUpdatePreOrderCarsRequest;
 use App\Http\Requests\PreOrderCar\UpdatePreOrderCarRequest;
 use App\Http\Resources\PreOrderCarResource;
 use App\Models\PreOrderCar;
 use App\Services\PreOrderCarsImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PreOrderCarController extends Controller
@@ -65,6 +67,31 @@ class PreOrderCarController extends Controller
         return response()->json([
             'message' => 'تم تحديث سيارة الطلب المسبق بنجاح',
             'data' => new PreOrderCarResource($preOrderCar->fresh(['supplier', 'media'])),
+        ]);
+    }
+
+    public function bulkUpdate(BulkUpdatePreOrderCarsRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $ids = $validated['pre_order_car_ids'];
+        $data = $request->updateData();
+
+        DB::transaction(function () use ($ids, $data): void {
+            PreOrderCar::query()->whereKey($ids)->update($data);
+        });
+
+        $cars = PreOrderCar::query()
+            ->whereKey($ids)
+            ->with(['media'])
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'message' => 'تم تحديث سيارات الطلب المسبق المحددة بنجاح',
+            'data' => [
+                'updated_count' => $cars->count(),
+                'cars' => PreOrderCarResource::collection($cars),
+            ],
         ]);
     }
 

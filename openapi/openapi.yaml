@@ -242,6 +242,20 @@ components:
         customs_fees_under_three: { type: number, nullable: true }
         preparation_days: { type: string, nullable: true }
         shipping_days: { type: string, nullable: true }
+    PreOrderCarsBulkUpdateRequest:
+      type: object
+      required: [pre_order_car_ids]
+      additionalProperties: false
+      properties:
+        pre_order_car_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer }
+        customs_fees: { type: number, minimum: 0 }
+        customs_fees_under_three: { type: number, minimum: 0 }
+        preparation_days: { type: string, maxLength: 255 }
+        shipping_days: { type: string, maxLength: 255 }
     # ── طلبات العملاء المسبقة ─────────────────────────────────────────
     PreOrderCarRequestBody:
       type: object
@@ -328,6 +342,7 @@ components:
     JsonCustomerPayment: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CustomerPaymentRequest' } } } }
     JsonAgentTransaction: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AgentTransactionRequest' } } } }
     JsonPreOrderCar: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequest' } } } }
+    JsonPreOrderCarsBulkUpdate: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarsBulkUpdateRequest' } } } }
     JsonPreOrderCarRequestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequestBody' } } } }
     JsonPreOrderCarRequestBodyDirect: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequestBodyDirect' } } } }
     JsonPreOrderCarRequestUpdateBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PreOrderCarRequestUpdateBody' } } } }
@@ -921,6 +936,13 @@ paths:
       summary: Import pre-order cars from xlsx/xls/csv (staff only)
       requestBody: { $ref: '#/components/requestBodies/PreOrderImport' }
       responses: { '201': { $ref: '#/components/responses/Created' }, '422': { $ref: '#/components/responses/ValidationError' } }
+  /pre-order-cars/bulk-update:
+    patch:
+      tags: [PreOrderCars]
+      summary: Bulk update selected pre-order cars (staff only)
+      description: Updates only the submitted customs and shipping/preparation fields for the selected cars.
+      requestBody: { $ref: '#/components/requestBodies/JsonPreOrderCarsBulkUpdate' }
+      responses: { '200': { $ref: '#/components/responses/Ok' }, '422': { $ref: '#/components/responses/ValidationError' } }
   /pre-order-cars/{preOrderCar}:
     parameters:
       - { name: preOrderCar, in: path, required: true, schema: { type: integer } }
