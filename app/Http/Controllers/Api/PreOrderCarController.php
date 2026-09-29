@@ -23,7 +23,7 @@ class PreOrderCarController extends Controller
 
         $cars = PreOrderCar::query()
             ->with([
-                'media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+                'media' => fn ($q) => $q->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id'),
             ])
             ->withCount('requests')
             ->when($request->string('status') === 'draft', fn ($q) => $q->whereNull('published_at'))
@@ -54,7 +54,7 @@ class PreOrderCarController extends Controller
 
         $preOrderCar->load([
             'requests.customer',
-            'media' => fn ($q) => $q->with('tags')->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+                'media' => fn ($q) => $q->with('tags')->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id'),
         ]);
 
         return response()->json(['data' => new PreOrderCarResource($preOrderCar)]);

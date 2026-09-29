@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PreOrderCar extends Model
@@ -74,9 +75,11 @@ class PreOrderCar extends Model
     /**
      * Images and videos attached to this pre-order catalog entry.
      */
-    public function media(): HasMany
+    public function media(): BelongsToMany
     {
-        return $this->hasMany(CarMedia::class, 'pre_order_car_id');
+        return $this->belongsToMany(CarMedia::class, 'car_media_links', 'pre_order_car_id', 'car_media_id')
+            ->withPivot(['is_cover', 'sort_order'])
+            ->withTimestamps();
     }
 
     public function isDraft(): bool

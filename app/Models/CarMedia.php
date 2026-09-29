@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\MediaUploadResolver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
@@ -19,23 +20,17 @@ class CarMedia extends Model
     protected $table = 'car_media';
 
     protected $fillable = [
-        'car_id',
-        'pre_order_car_id',
         'type',
         'url',
         'disk',
         'path',
         'uploaded_by',
         'title',
-        'is_cover',
-        'sort_order',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_cover' => 'boolean',
-            'sort_order' => 'integer',
             'size' => 'integer',
         ];
     }
@@ -53,14 +48,18 @@ class CarMedia extends Model
         });
     }
 
-    public function car(): BelongsTo
+    public function cars(): BelongsToMany
     {
-        return $this->belongsTo(Car::class);
+        return $this->belongsToMany(Car::class, 'car_media_links')
+            ->withPivot(['is_cover', 'sort_order'])
+            ->withTimestamps();
     }
 
-    public function preOrderCar(): BelongsTo
+    public function preOrderCars(): BelongsToMany
     {
-        return $this->belongsTo(PreOrderCar::class);
+        return $this->belongsToMany(PreOrderCar::class, 'car_media_links', 'car_media_id', 'pre_order_car_id')
+            ->withPivot(['is_cover', 'sort_order'])
+            ->withTimestamps();
     }
 
     public function uploadedByUser(): BelongsTo

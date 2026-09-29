@@ -23,7 +23,7 @@ class CarController extends Controller
     public function available(Request $request): JsonResponse
     {
         $query = Car::query()
-            ->with(['media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id')])
+            ->with(['media' => fn ($q) => $q->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id')])
             ->where('status', '!=', Car::STATUS_SOLD)
             ->when($request->filled('brand'), fn($q) => $q->where('brand', 'like', '%' . $request->string('brand') . '%'))
             ->when($request->filled('search'), function ($q) use ($request) {
@@ -60,7 +60,7 @@ class CarController extends Controller
             ->with([
                 'firstOrder.customer',
                 'currentOrder.customer',
-                'media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+                'media' => fn ($q) => $q->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id'),
             ])
             ->when($canSeeOperationalData, fn($q) => $q->with([
                 'supplier',
@@ -102,7 +102,7 @@ class CarController extends Controller
             'containerOpener',
             'firstOrder.customer',
             'currentOrder.customer',
-            'media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+            'media' => fn ($q) => $q->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id'),
         ]);
 
         return response()->json([
@@ -123,7 +123,7 @@ class CarController extends Controller
             'documents',
             'firstOrder.customer',
             'currentOrder.customer',
-            'media' => fn ($q) => $q->with('tags')->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+            'media' => fn ($q) => $q->with('tags')->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id'),
         ]);
 
         if ($canSeeOperationalData) {
@@ -154,7 +154,7 @@ class CarController extends Controller
             'containerOpener',
             'firstOrder.customer',
             'currentOrder.customer',
-            'media' => fn ($q) => $q->orderByDesc('is_cover')->orderBy('sort_order')->orderByDesc('id'),
+            'media' => fn ($q) => $q->orderByDesc('car_media_links.is_cover')->orderBy('car_media_links.sort_order')->orderByDesc('car_media.id'),
         ]);
 
         return response()->json([

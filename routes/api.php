@@ -255,11 +255,13 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
     Route::prefix('cars/{car}/media')->group(function () {
         Route::get('/', [CarMediaController::class, 'index']);
         Route::post('/', [CarMediaController::class, 'store']);
+        Route::delete('/{carMedia}', [CarMediaController::class, 'detachFromCar']);
     });
 
     Route::prefix('pre-order-cars/{preOrderCar}/media')->group(function () {
         Route::get('/', [CarMediaController::class, 'preOrderIndex']);
         Route::post('/', [CarMediaController::class, 'storeForPreOrder']);
+        Route::delete('/{carMedia}', [CarMediaController::class, 'detachFromPreOrder']);
     });
 
     Route::prefix('car-media')->group(function () {

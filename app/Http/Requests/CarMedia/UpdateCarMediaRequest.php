@@ -17,9 +17,9 @@ class UpdateCarMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'title' => ['sometimes', 'nullable', 'string', 'max:255'],
-            // 'is_cover' => ['sometimes', 'boolean'],
-            // 'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'is_cover' => ['sometimes', 'boolean'],
+            'sort_order' => ['sometimes', 'integer', 'min:0'],
 
             // When present, REPLACES the media's full tag set (sync, not
             // append) — send the complete list the client wants, including

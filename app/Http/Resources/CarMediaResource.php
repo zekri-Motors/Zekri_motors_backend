@@ -15,39 +15,23 @@ class CarMediaResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $pivot = $this->pivot;
+        $carId = $pivot?->car_id;
+        $preOrderCarId = $pivot?->pre_order_car_id;
+        $cars = $this->relationLoaded('cars') ? $this->cars : collect();
+        $preOrderCars = $this->relationLoaded('preOrderCars') ? $this->preOrderCars : collect();
+
         return [
             'id' => $this->id,
-            'vehicle_type' => $this->car_id !== null ? 'car' : 'pre_order_car',
-            'vehicle_id' => $this->car_id ?? $this->pre_order_car_id,
-            'vehicle' => $this->when(
-                $this->relationLoaded('car') || $this->relationLoaded('preOrderCar'),
-                function () {
-                    $vehicle = $this->car_id !== null ? $this->car : $this->preOrderCar;
-
-                    return $vehicle ? [
-                        'id' => $vehicle->id,
-                        'brand' => $vehicle->brand,
-                        'model' => $vehicle->model,
-                        'manufacture_year' => $vehicle->manufacture_year,
-                        'vin' => $vehicle instanceof \App\Models\Car ? $vehicle->vin : null,
-                    ] : null;
-                }
-            ),
-            'car_id' => $this->car_id,
-            'car' => $this->whenLoaded('car', fn () => [
-                'id' => $this->car->id,
-                'brand' => $this->car->brand,
-                'model' => $this->car->model,
-                'manufacture_year' => $this->car->manufacture_year,
-                'vin' => $this->car->vin,
-            ]),
-            'pre_order_car_id' => $this->pre_order_car_id,
-            'pre_order_car' => $this->whenLoaded('preOrderCar', fn () => [
-                'id' => $this->preOrderCar->id,
-                'brand' => $this->preOrderCar->brand,
-                'model' => $this->preOrderCar->model,
-                'manufacture_year' => $this->preOrderCar->manufacture_year,
-            ]),
+            'vehicle_type' => $carId !== null ? 'car' : ($preOrderCarId !== null ? 'pre_order_car' : null),
+            'vehicle_id' => $carId ?? $preOrderCarId,
+            'car_id' => $carId,
+            'pre_order_car_id' => $preOrderCarId,
+            'vehicles' => $this->when($this->relationLoaded('cars') || $this->relationLoaded('preOrderCars'), function () use ($cars, $preOrderCars) {
+                return collect($cars)->map(fn ($car) => ['type' => 'car', 'id' => $car->id, 'brand' => $car->brand, 'model' => $car->model, 'manufacture_year' => $car->manufacture_year, 'vin' => $car->vin])
+                    ->merge(collect($preOrderCars)->map(fn ($car) => ['type' => 'pre_order_car', 'id' => $car->id, 'brand' => $car->brand, 'model' => $car->model, 'manufacture_year' => $car->manufacture_year]))
+                    ->values();
+            }),
 
             'type' => $this->type,
             'url' => $this->url,
@@ -55,8 +39,8 @@ class CarMediaResource extends JsonResource
             'size' => $this->size,
 
             'title' => $this->title,
-            'is_cover' => $this->is_cover,
-            'sort_order' => $this->sort_order,
+            'is_cover' => (bool) ($pivot?->is_cover ?? false),
+            'sort_order' => (int) ($pivot?->sort_order ?? 0),
 
             'tags' => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')->values()),
 

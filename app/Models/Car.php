@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -102,9 +103,11 @@ class Car extends Model
         return $this->belongsTo(ContainerOpener::class);
     }
 
-    public function media(): HasMany
+    public function media(): BelongsToMany
     {
-        return $this->hasMany(CarMedia::class);
+        return $this->belongsToMany(CarMedia::class, 'car_media_links')
+            ->withPivot(['is_cover', 'sort_order'])
+            ->withTimestamps();
     }
 
     /**

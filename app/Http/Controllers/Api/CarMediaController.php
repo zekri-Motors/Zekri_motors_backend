@@ -40,9 +40,9 @@ class CarMediaController extends Controller
                 'tags',
                 fn ($tq) => $tq->whereIn('name', $this->parseTags($request->string('tags')))
             ))
-            ->orderByDesc('is_cover')
-            ->orderBy('sort_order')
-            ->orderByDesc('id')
+            ->orderByDesc('car_media_links.is_cover')
+            ->orderBy('car_media_links.sort_order')
+            ->orderByDesc('car_media.id')
             ->get();
 
         return response()->json(['data' => CarMediaResource::collection($media)]);
@@ -52,6 +52,16 @@ class CarMediaController extends Controller
     {
         $urls = is_array($request->input('url')) ? $request->input('url') : null;
         $mediaItems = DB::transaction(function () use ($request, $car, $urls) {
+            if ($this->existingMediaIds($request) !== []) {
+                $ids = $this->existingMediaIds($request);
+                $car->media()->syncWithoutDetaching(array_fill_keys($ids, [
+                    'is_cover' => false,
+                    'sort_order' => 0,
+                ]));
+
+                return CarMedia::whereIn('id', $ids)->get();
+            }
+
             if ($urls === null) {
                 $attributes = MediaUploadResolver::resolve(
                     $request->file('file'),
@@ -60,19 +70,27 @@ class CarMediaController extends Controller
                     folder: 'car-media',
                 );
 
-                $media = $car->media()->create($attributes);
+                $media = $car->media()->create($attributes + ['title' => $request->input('title')]);
+                $car->media()->updateExistingPivot($media->id, [
+                    'is_cover' => $request->boolean('is_cover'),
+                    'sort_order' => $request->integer('sort_order', 0),
+                ]);
                 $this->syncTags($media, $request);
 
                 return collect([$media]);
             }
 
-            return collect($urls)->map(function (string $url) use ($request, $car) {
+            return collect($urls)->map(function (string $url, int $index) use ($request, $car) {
                 $media = $car->media()->create(MediaUploadResolver::resolve(
                     null,
                     $url,
                     $request->input('type'),
                     folder: 'car-media',
                 ));
+                $car->media()->updateExistingPivot($media->id, [
+                    'is_cover' => $request->boolean('is_cover') && $index === 0,
+                    'sort_order' => $request->integer('sort_order', 0) + $index,
+                ]);
                 $this->syncTags($media, $request);
 
                 return $media;
@@ -82,8 +100,8 @@ class CarMediaController extends Controller
         return response()->json([
             'message' => $mediaItems->count() > 1 ? 'تمت إضافة الصور بنجاح' : 'تمت إضافة الميديا بنجاح',
             'data' => $urls === null
-                ? new CarMediaResource($mediaItems->first()->load('tags'))
-                : CarMediaResource::collection($mediaItems->each->load('tags'))
+                ? new CarMediaResource($mediaItems->first()->load(['tags', 'cars']))
+                : CarMediaResource::collection($mediaItems->each->load(['tags', 'cars']))
         ], 201);
     }
 
@@ -101,9 +119,9 @@ class CarMediaController extends Controller
                 'tags',
                 fn ($tq) => $tq->whereIn('name', $this->parseTags($request->string('tags')))
             ))
-            ->orderByDesc('is_cover')
-            ->orderBy('sort_order')
-            ->orderByDesc('id')
+            ->orderByDesc('car_media_links.is_cover')
+            ->orderBy('car_media_links.sort_order')
+            ->orderByDesc('car_media.id')
             ->get();
 
         return response()->json(['data' => CarMediaResource::collection($media)]);
@@ -118,27 +136,41 @@ class CarMediaController extends Controller
 
         $urls = is_array($request->input('url')) ? $request->input('url') : null;
         $mediaItems = DB::transaction(function () use ($request, $preOrderCar, $urls) {
+            $existingIds = $this->existingMediaIds($request);
+            if ($existingIds !== []) {
+                $preOrderCar->media()->syncWithoutDetaching(array_fill_keys($existingIds, [
+                    'is_cover' => false,
+                    'sort_order' => 0,
+                ]));
+
+                return CarMedia::whereIn('id', $existingIds)->get();
+            }
+
             $sources = $urls ?? [null];
 
             return collect($sources)->map(function (?string $url, int $index) use ($request, $preOrderCar, $urls) {
-                $media = $preOrderCar->media()->create(
-                    MediaUploadResolver::resolve(
+                $attributes = MediaUploadResolver::resolve(
                         $url === null ? $request->file('file') : null,
                         $url ?? $request->input('url'),
                         $request->input('type'),
                         folder: 'car-media',
                     ) + [
                         'title' => $request->input('title'),
-                        'is_cover' => $request->boolean('is_cover') && ($urls === null || $index === 0),
-                        'sort_order' => $request->integer('sort_order', 0) + $index,
                         'uploaded_by' => $request->user()->id,
-                    ]
-                );
+                    ];
+                $media = CarMedia::create($attributes);
+                $preOrderCar->media()->attach($media->id, [
+                    'is_cover' => $request->boolean('is_cover') && ($urls === null || $index === 0),
+                    'sort_order' => $request->integer('sort_order', 0) + $index,
+                ]);
 
                 $this->syncTags($media, $request);
 
-                if ($media->is_cover) {
-                    $preOrderCar->media()->where('id', '!=', $media->id)->update(['is_cover' => false]);
+                if ($request->boolean('is_cover') && ($urls === null || $index === 0)) {
+                    DB::table('car_media_links')
+                        ->where('pre_order_car_id', $preOrderCar->id)
+                        ->where('car_media_id', '!=', $media->id)
+                        ->update(['is_cover' => false]);
                 }
 
                 return $media;
@@ -148,9 +180,9 @@ class CarMediaController extends Controller
         return response()->json([
             'message' => $mediaItems->count() > 1 ? 'تمت إضافة الصور بنجاح' : 'تمت إضافة الميديا بنجاح',
             'data' => $urls === null
-                ? new CarMediaResource($mediaItems->first()->load(['tags', 'preOrderCar']))
+                ? new CarMediaResource($mediaItems->first()->load(['tags', 'preOrderCars']))
                 : CarMediaResource::collection(
-                $mediaItems->each->load(['tags', 'preOrderCar'])
+                $mediaItems->each->load(['tags', 'preOrderCars'])
             )
         ], 201);
     }
@@ -164,18 +196,30 @@ class CarMediaController extends Controller
 
     public function update(UpdateCarMediaRequest $request, CarMedia $carMedia): JsonResponse
     {
-        $carMedia->update($request->safe()->except('tags'));
+        $carMedia->update($request->safe()->except(['tags', 'is_cover', 'sort_order']));
+
+        if ($request->hasAny(['is_cover', 'sort_order'])) {
+            $pivotChanges = $request->safe()->only(['is_cover', 'sort_order']);
+            foreach ($carMedia->cars as $car) {
+                $car->media()->updateExistingPivot($carMedia->id, $pivotChanges);
+                if (($pivotChanges['is_cover'] ?? false) === true) {
+                    $car->media()->whereKeyNot($carMedia->id)->get()->each(
+                        fn (CarMedia $media) => $car->media()->updateExistingPivot($media->id, ['is_cover' => false])
+                    );
+                }
+            }
+            foreach ($carMedia->preOrderCars as $preOrderCar) {
+                $preOrderCar->media()->updateExistingPivot($carMedia->id, $pivotChanges);
+                if (($pivotChanges['is_cover'] ?? false) === true) {
+                    $preOrderCar->media()->whereKeyNot($carMedia->id)->get()->each(
+                        fn (CarMedia $media) => $preOrderCar->media()->updateExistingPivot($media->id, ['is_cover' => false])
+                    );
+                }
+            }
+        }
 
         if ($request->has('tags')) {
             $carMedia->tags()->sync(TagResolver::resolveIds($request->input('tags', []), $request->user()));
-        }
-
-        if ($request->boolean('is_cover')) {
-            $ownerMedia = $carMedia->car_id !== null
-                ? $carMedia->car->media()
-                : $carMedia->preOrderCar->media();
-
-            $ownerMedia->where('id', '!=', $carMedia->id)->update(['is_cover' => false]);
         }
 
         return response()->json([
@@ -193,6 +237,22 @@ class CarMediaController extends Controller
         $carMedia->delete();
 
         return response()->json(['message' => 'تم حذف الميديا بنجاح']);
+    }
+
+    public function detachFromCar(Car $car, CarMedia $carMedia): JsonResponse
+    {
+        $this->authorize('delete', $carMedia);
+        $car->media()->detach($carMedia->id);
+
+        return response()->json(['message' => 'تم فصل الميديا عن السيارة بنجاح']);
+    }
+
+    public function detachFromPreOrder(PreOrderCar $preOrderCar, CarMedia $carMedia): JsonResponse
+    {
+        $this->authorize('delete', $carMedia);
+        $preOrderCar->media()->detach($carMedia->id);
+
+        return response()->json(['message' => 'تم فصل الميديا عن سيارة الطلب المسبق بنجاح']);
     }
 
     /**
@@ -214,17 +274,17 @@ class CarMediaController extends Controller
 
         $media = CarMedia::query()
             ->with([
-                'car:id,brand,model,manufacture_year,vin',
-                'preOrderCar:id,brand,model,manufacture_year',
+                'cars:id,brand,model,manufacture_year,vin',
+                'preOrderCars:id,brand,model,manufacture_year',
                 'tags',
             ])
             ->when($request->filled('car_name'), function ($q) use ($request) {
                 $term = $request->string('car_name');
                 $q->where(function ($mediaQuery) use ($term) {
-                    $mediaQuery->whereHas('car', function ($carQuery) use ($term) {
+                    $mediaQuery->whereHas('cars', function ($carQuery) use ($term) {
                         $carQuery->where('brand', 'like', "%{$term}%")
                             ->orWhere('model', 'like', "%{$term}%");
-                    })->orWhereHas('preOrderCar', function ($preOrderCarQuery) use ($term) {
+                    })->orWhereHas('preOrderCars', function ($preOrderCarQuery) use ($term) {
                         $preOrderCarQuery->where('brand', 'like', "%{$term}%")
                             ->orWhere('model', 'like', "%{$term}%");
                     });
@@ -268,6 +328,18 @@ class CarMediaController extends Controller
         return collect(explode(',', $raw))
             ->map(fn($tag) => trim($tag))
             ->filter(fn($tag) => $tag !== '')
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, int> */
+    private function existingMediaIds(StoreCarMediaRequest $request): array
+    {
+        return collect($request->input('media_ids', []))
+            ->merge($request->filled('media_id') ? [$request->integer('media_id')] : [])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
             ->values()
             ->all();
     }
