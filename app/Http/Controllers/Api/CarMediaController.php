@@ -83,7 +83,7 @@ class CarMediaController extends Controller
             'message' => $mediaItems->count() > 1 ? 'تمت إضافة الصور بنجاح' : 'تمت إضافة الميديا بنجاح',
             'data' => $urls === null
                 ? new CarMediaResource($mediaItems->first()->load('tags'))
-                : CarMediaResource::collection($mediaItems->load('tags')),
+                : CarMediaResource::collection($mediaItems->each->load('tags'))
         ], 201);
     }
 
@@ -149,7 +149,9 @@ class CarMediaController extends Controller
             'message' => $mediaItems->count() > 1 ? 'تمت إضافة الصور بنجاح' : 'تمت إضافة الميديا بنجاح',
             'data' => $urls === null
                 ? new CarMediaResource($mediaItems->first()->load(['tags', 'preOrderCar']))
-                : CarMediaResource::collection($mediaItems->load(['tags', 'preOrderCar'])),
+                : CarMediaResource::collection(
+                $mediaItems->each->load(['tags', 'preOrderCar'])
+            )
         ], 201);
     }
 
