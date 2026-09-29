@@ -13,6 +13,7 @@ use App\Services\MediaUploadResolver;
 use App\Services\TagResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CarMediaController extends Controller
 {
@@ -49,22 +50,40 @@ class CarMediaController extends Controller
 
     public function store(StoreCarMediaRequest $request, Car $car): JsonResponse
     {
-        $attributes = MediaUploadResolver::resolve(
-            $request->file('file'),
-            $request->input('url'),
-            $request->input('type'),
-            folder: 'car-media',
-        );
+        $urls = is_array($request->input('url')) ? $request->input('url') : null;
+        $mediaItems = DB::transaction(function () use ($request, $car, $urls) {
+            if ($urls === null) {
+                $attributes = MediaUploadResolver::resolve(
+                    $request->file('file'),
+                    $request->input('url'),
+                    $request->input('type'),
+                    folder: 'car-media',
+                );
 
-        $media = $car->media()->create($attributes);
+                $media = $car->media()->create($attributes);
+                $this->syncTags($media, $request);
 
-        if ($request->filled('tags')) {
-            $media->tags()->sync(TagResolver::resolveIds($request->input('tags'), $request->user()));
-        }
+                return collect([$media]);
+            }
+
+            return collect($urls)->map(function (string $url) use ($request, $car) {
+                $media = $car->media()->create(MediaUploadResolver::resolve(
+                    null,
+                    $url,
+                    $request->input('type'),
+                    folder: 'car-media',
+                ));
+                $this->syncTags($media, $request);
+
+                return $media;
+            });
+        });
 
         return response()->json([
-            'message' => 'تمت إضافة الميديا بنجاح',
-            'data' => new CarMediaResource($media->load('tags')),
+            'message' => $mediaItems->count() > 1 ? 'تمت إضافة الصور بنجاح' : 'تمت إضافة الميديا بنجاح',
+            'data' => $urls === null
+                ? new CarMediaResource($mediaItems->first()->load('tags'))
+                : CarMediaResource::collection($mediaItems->load('tags')),
         ], 201);
     }
 
@@ -97,32 +116,48 @@ class CarMediaController extends Controller
     {
         $this->authorize('view', $preOrderCar);
 
-        $attributes = MediaUploadResolver::resolve(
-            $request->file('file'),
-            $request->input('url'),
-            $request->input('type'),
-            folder: 'car-media',
-        );
+        $urls = is_array($request->input('url')) ? $request->input('url') : null;
+        $mediaItems = DB::transaction(function () use ($request, $preOrderCar, $urls) {
+            $sources = $urls ?? [null];
 
-        $media = $preOrderCar->media()->create($attributes + [
-            'title' => $request->input('title'),
-            'is_cover' => $request->boolean('is_cover'),
-            'sort_order' => $request->integer('sort_order', 0),
-            'uploaded_by' => $request->user()->id,
-        ]);
+            return collect($sources)->map(function (?string $url, int $index) use ($request, $preOrderCar, $urls) {
+                $media = $preOrderCar->media()->create(
+                    MediaUploadResolver::resolve(
+                        $url === null ? $request->file('file') : null,
+                        $url ?? $request->input('url'),
+                        $request->input('type'),
+                        folder: 'car-media',
+                    ) + [
+                        'title' => $request->input('title'),
+                        'is_cover' => $request->boolean('is_cover') && ($urls === null || $index === 0),
+                        'sort_order' => $request->integer('sort_order', 0) + $index,
+                        'uploaded_by' => $request->user()->id,
+                    ]
+                );
 
+                $this->syncTags($media, $request);
+
+                if ($media->is_cover) {
+                    $preOrderCar->media()->where('id', '!=', $media->id)->update(['is_cover' => false]);
+                }
+
+                return $media;
+            });
+        });
+
+        return response()->json([
+            'message' => $mediaItems->count() > 1 ? 'تمت إضافة الصور بنجاح' : 'تمت إضافة الميديا بنجاح',
+            'data' => $urls === null
+                ? new CarMediaResource($mediaItems->first()->load(['tags', 'preOrderCar']))
+                : CarMediaResource::collection($mediaItems->load(['tags', 'preOrderCar'])),
+        ], 201);
+    }
+
+    private function syncTags(CarMedia $media, StoreCarMediaRequest $request): void
+    {
         if ($request->filled('tags')) {
             $media->tags()->sync(TagResolver::resolveIds($request->input('tags'), $request->user()));
         }
-
-        if ($media->is_cover) {
-            $preOrderCar->media()->where('id', '!=', $media->id)->update(['is_cover' => false]);
-        }
-
-        return response()->json([
-            'message' => 'تمت إضافة الميديا بنجاح',
-            'data' => new CarMediaResource($media->load(['tags', 'preOrderCar'])),
-        ], 201);
     }
 
     public function update(UpdateCarMediaRequest $request, CarMedia $carMedia): JsonResponse

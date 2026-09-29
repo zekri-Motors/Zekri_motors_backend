@@ -376,10 +376,14 @@ components:
         multipart/form-data:
           schema:
             type: object
-            description: أرسل واحدًا فقط من file أو url.
+            description: أرسل واحدًا فقط من file أو url. يمكن أن يكون url رابطًا واحدًا أو مصفوفة روابط.
             properties:
               file: { type: string, format: binary, nullable: true }
-              url: { type: string, format: uri, nullable: true }
+              url:
+                oneOf:
+                  - { type: string, format: uri }
+                  - { type: array, minItems: 1, items: { type: string, format: uri } }
+                nullable: true
               type: { type: string, enum: [image, video], nullable: true }
               title: { type: string, nullable: true }
               description: { type: string, nullable: true }

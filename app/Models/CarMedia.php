@@ -26,6 +26,9 @@ class CarMedia extends Model
         'disk',
         'path',
         'uploaded_by',
+        'title',
+        'is_cover',
+        'sort_order',
     ];
 
     protected function casts(): array
