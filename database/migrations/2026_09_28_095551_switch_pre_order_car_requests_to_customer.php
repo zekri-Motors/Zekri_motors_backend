@@ -52,18 +52,18 @@ return new class extends Migration
         }
 
         // حذف عمود contact_id وإضافة customer_id
-        Schema::table('pre_order_car_requests', function (Blueprint $table) {
-            $table->dropColumn('contact_id');
-        });
+        // Schema::table('pre_order_car_requests', function (Blueprint $table) {
+        //     $table->dropColumn('contact_id');
+        // });
 
-        Schema::table('pre_order_car_requests', function (Blueprint $table) {
-            $table->foreignId('customer_id')
-                ->after('pre_order_car_id')
-                ->constrained('customers')
-                ->restrictOnDelete();
+        // Schema::table('pre_order_car_requests', function (Blueprint $table) {
+        //     $table->foreignId('customer_id')
+        //         ->after('pre_order_car_id')
+        //         ->constrained('customers')
+        //         ->restrictOnDelete();
 
-            $table->unique(['pre_order_car_id', 'customer_id']);
-        });
+        //     $table->unique(['pre_order_car_id', 'customer_id']);
+        // });
     }
 
     public function down(): void
