@@ -26,7 +26,10 @@ class StoreCarMediaRequest extends FormRequest
             'media_ids.*' => [
                 'integer',
                 'distinct',
-                Rule::exists('car_media', 'id')->where('type', CarMedia::TYPE_IMAGE),
+                Rule::exists('car_media', 'id')->where(function ($query) {
+                    $query->where('type', CarMedia::TYPE_IMAGE)
+                        ->orWhere('type', CarMedia::TYPE_VIDEO);
+                }),
             ],
             // Exactly one of these two — enforced in withValidator() below.
             'file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,webm,mkv', 'max:102400'],
