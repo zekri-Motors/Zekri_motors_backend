@@ -34,6 +34,62 @@ class BatchCarsImportService
     private const COL_ARRIVAL_DATE = 13;
 
     /**
+     * Create a batch and its cars from the same named fields used by the
+     * Excel import. The operation is atomic, including customers and orders.
+     *
+     * @param array<string, mixed> $data
+     * @param array<int, array<string, mixed>> $cars
+     */
+    public function createFromCars(array $data, array $cars, int $createdBy): Batch
+    {
+        return DB::transaction(function () use ($data, $cars, $createdBy): Batch {
+            $batch = Batch::create([
+                'supplier_id' => $data['supplier_id'],
+                'purchase_date' => $data['purchase_date'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'status' => $data['status'] ?? Batch::STATUS_PARTIAL,
+            ]);
+
+            foreach ($cars as $car) {
+                $this->importRow(
+                    $this->carArrayToRow($car),
+                    $batch,
+                    $data['container_opener_id'] ?? null,
+                    (int) $data['supplier_id'],
+                    $createdBy,
+                );
+            }
+
+            $batch->update(['cars_count' => $batch->cars()->count()]);
+            $batch->recomputeTotalCostForeign(save: false);
+            $batch->recomputeExchangeRate(save: true);
+
+            return $batch->fresh(['supplier', 'cars']);
+        });
+    }
+
+    /** @param array<string, mixed> $car */
+    private function carArrayToRow(array $car): Collection
+    {
+        return collect([
+            $car['brand'] ?? null,
+            $car['model'] ?? null,
+            $car['finition'] ?? null,
+            $car['manufacture_year'] ?? null,
+            $car['color'] ?? null,
+            $car['vin'] ?? null,
+            $car['foreign_purchase_price'] ?? null,
+            $car['sale_price'] ?? null,
+            $car['tracking_number'] ?? null,
+            $car['customer_name'] ?? null,
+            $car['passport_no'] ?? null,
+            $car['national_id'] ?? null,
+            $car['shipping_cost'] ?? null,
+            $car['arrival_date'] ?? null,
+        ]);
+    }
+
+    /**
      * Create the Batch and import every car row from the uploaded file.
      * The whole import is atomic: if any car row fails, all records created
      * by this import are rolled back.
@@ -124,13 +180,16 @@ class BatchCarsImportService
         $color = $this->nullableString($row->get(self::COL_COLOR));
         $vin = $this->nullableString($row->get(self::COL_VIN));
         $purchasePrice = $row->get(self::COL_PURCHASE_PRICE);
-        $salePriceRaw = $row->get(self::COL_SALE_PRICE);
-        $trackingNumber = $this->nullableString($row->get(self::COL_TRACKING_NUMBER));
-        $customerName = trim((string) $row->get(self::COL_CUSTOMER_NAME));
-        $passportNo = $row->get(self::COL_PASSPORT_NO);
-        $nationalId = $row->get(self::COL_NATIONAL_ID);
-        $shippingCost = $row->get(self::COL_SHIPPING_COST);
-        $arrivalDateRaw = $row->get(self::COL_ARRIVAL_DATE);
+        // Older/current Excel templates may omit the optional sale-price
+        // column. Detect that layout so the remaining columns stay aligned.
+        $hasSalePriceColumn = $row->count() > self::COL_ARRIVAL_DATE;
+        $salePriceRaw = $hasSalePriceColumn ? $row->get(self::COL_SALE_PRICE) : null;
+        $trackingNumber = $this->nullableString($row->get($hasSalePriceColumn ? self::COL_TRACKING_NUMBER : 7));
+        $customerName = trim((string) $row->get($hasSalePriceColumn ? self::COL_CUSTOMER_NAME : 8));
+        $passportNo = $row->get($hasSalePriceColumn ? self::COL_PASSPORT_NO : 9);
+        $nationalId = $row->get($hasSalePriceColumn ? self::COL_NATIONAL_ID : 10);
+        $shippingCost = $row->get($hasSalePriceColumn ? self::COL_SHIPPING_COST : 11);
+        $arrivalDateRaw = $row->get($hasSalePriceColumn ? self::COL_ARRIVAL_DATE : 12);
 
         if ($brand === '' || $model === '') {
             throw new \RuntimeException('العلامة التجارية والموديل حقلان إلزاميان');

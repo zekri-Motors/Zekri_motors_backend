@@ -33,17 +33,19 @@ class BatchController extends Controller
 
     public function store(StoreBatchRequest $request): JsonResponse
     {
-        $batch = Batch::create(
-            $request->validated()
-                + ['status' => $request->input('status', Batch::STATUS_PARTIAL)]
-        );
+        $data = $request->validated();
+        $cars = $data['cars'];
+        unset($data['cars']);
 
-        // exchange_rate stays NULL at creation — no payments exist yet.
-        // It will be computed the first time a supplier_payment is saved.
+        $batch = app(BatchCarsImportService::class)->createFromCars(
+            $data,
+            $cars,
+            $request->user()->id,
+        );
 
         return response()->json([
             'message' => 'تم إنشاء دفعة الاستيراد بنجاح',
-            'data' => new BatchResource($batch->load('supplier')),
+            'data' => new BatchResource($batch->load(['supplier', 'cars'])),
         ], 201);
     }
 

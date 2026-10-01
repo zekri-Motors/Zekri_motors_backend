@@ -146,12 +146,36 @@ components:
         google_map_link: { type: string, format: uri, nullable: true, example: "https://maps.google.com/?q=..." }
     BatchRequest:
       type: object
-      required: [supplier_id]
+      required: [supplier_id, cars]
       properties:
         supplier_id: { type: integer }
+        container_opener_id: { type: integer, nullable: true }
         purchase_date: { type: string, format: date, nullable: true }
         status: { type: string, enum: [partial, fully_paid], nullable: true }
         notes: { type: string, nullable: true }
+        cars:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/BatchCarRequest'
+    BatchCarRequest:
+      type: object
+      required: [brand, model, manufacture_year, foreign_purchase_price, customer_name, passport_no, national_id]
+      properties:
+        brand: { type: string }
+        model: { type: string }
+        finition: { type: string, nullable: true }
+        manufacture_year: { type: integer }
+        color: { type: string, nullable: true }
+        vin: { type: string, nullable: true }
+        foreign_purchase_price: { type: number }
+        sale_price: { type: number, nullable: true }
+        tracking_number: { type: string, nullable: true }
+        customer_name: { type: string }
+        passport_no: { type: string }
+        national_id: { type: string }
+        shipping_cost: { type: number, nullable: true }
+        arrival_date: { type: string, format: date, nullable: true }
     CarRequest:
       type: object
       required: [batch_id, supplier_id, brand, model, manufacture_year, foreign_purchase_price, sale_price]
