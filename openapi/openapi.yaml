@@ -619,10 +619,16 @@ paths:
     parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
     get: { tags: [CarMedia], summary: List media for a car, parameters: [{ name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string }, description: Comma separated tag names }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post: { tags: [CarMedia], summary: Upload/link media to car, requestBody: { $ref: '#/components/requestBodies/MediaUpload' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /cars/{car}/media/{carMedia}:
+    parameters: [{ name: car, in: path, required: true, schema: { type: integer } }, { name: carMedia, in: path, required: true, schema: { type: integer } }]
+    delete: { tags: [CarMedia], summary: Detach media from a regular car, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /pre-order-cars/{preOrderCar}/media:
     parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }]
     get: { tags: [CarMedia], summary: List media for a pre-order car, parameters: [{ name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string }, description: Comma separated tag names }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post: { tags: [CarMedia], summary: Upload/link media to a pre-order car, requestBody: { $ref: '#/components/requestBodies/MediaUpload' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
+  /pre-order-cars/{preOrderCar}/media/{carMedia}:
+    parameters: [{ name: preOrderCar, in: path, required: true, schema: { type: integer } }, { name: carMedia, in: path, required: true, schema: { type: integer } }]
+    delete: { tags: [CarMedia], summary: Detach media from a pre-order car, responses: { '200': { $ref: '#/components/responses/Deleted' } } }
   /car-media/search:
     get: { tags: [CarMedia], summary: Search media for regular and pre-order cars globally, parameters: [{ name: car_name, in: query, schema: { type: string } }, { name: type, in: query, schema: { type: string, enum: [image, video] } }, { name: tags, in: query, schema: { type: string } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /car-media:

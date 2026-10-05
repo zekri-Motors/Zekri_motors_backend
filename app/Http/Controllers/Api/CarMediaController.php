@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CarMedia\StoreCarMediaRequest;
+use App\Http\Requests\CarMedia\DetachCarMediaRequest;
 use App\Http\Requests\CarMedia\UpdateCarMediaRequest;
 use App\Http\Resources\CarMediaResource;
 use App\Models\Car;
@@ -205,17 +206,15 @@ class CarMediaController extends Controller
         return response()->json(['message' => 'تم حذف الميديا بنجاح']);
     }
 
-    public function detachFromCar(Car $car, CarMedia $carMedia): JsonResponse
+    public function detachFromCar(DetachCarMediaRequest $request, Car $car, CarMedia $carMedia): JsonResponse
     {
-        $this->authorize('delete', $carMedia);
         $car->media()->detach($carMedia->id);
 
         return response()->json(['message' => 'تم فصل الميديا عن السيارة بنجاح']);
     }
 
-    public function detachFromPreOrder(PreOrderCar $preOrderCar, CarMedia $carMedia): JsonResponse
+    public function detachFromPreOrder(DetachCarMediaRequest $request, PreOrderCar $preOrderCar, CarMedia $carMedia): JsonResponse
     {
-        $this->authorize('delete', $carMedia);
         $preOrderCar->media()->detach($carMedia->id);
 
         return response()->json(['message' => 'تم فصل الميديا عن سيارة الطلب المسبق بنجاح']);
