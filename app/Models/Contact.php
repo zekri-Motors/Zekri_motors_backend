@@ -18,6 +18,13 @@ class Contact extends Model
         'google_map_link',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'phone' => 'array',
+        ];
+    }
+
     public function preOrderCarRequests(): HasMany
     {
         return $this->hasMany(PreOrderCarRequest::class);

@@ -21,8 +21,9 @@ class UpdateContactRequest extends FormRequest
             'whatsapp_number' => ['sometimes', 'required', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{6,20}$/'],
             'address' => ['nullable', 'string', 'max:255'],
 
-            // رقم هاتف عادي (اختياري — مختلف عن WhatsApp)
-            'phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{6,20}$/'],
+            // أرقام هاتف عادية (اختيارية — مختلفة عن WhatsApp)
+            'phone' => ['nullable', 'array'],
+            'phone.*' => ['string', 'distinct', 'max:20', 'regex:/^\+?[0-9\s\-]{6,20}$/'],
 
             // رابط Google Maps (اختياري)
             'google_map_link' => ['nullable', 'string', 'url', 'max:2048'],

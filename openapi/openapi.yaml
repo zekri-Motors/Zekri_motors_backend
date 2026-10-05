@@ -141,7 +141,11 @@ components:
       properties:
         name: { type: string }
         whatsapp_number: { type: string, example: "+213 555 12 34 56" }
-        phone: { type: string, nullable: true, example: "+213 555 98 76 54" }
+        phone:
+          type: array
+          nullable: true
+          description: مصفوفة أرقام الهواتف
+          items: { type: string, example: "+213 555 98 76 54" }
         address: { type: string, nullable: true }
         google_map_link: { type: string, format: uri, nullable: true, example: "https://maps.google.com/?q=..." }
     BatchRequest:
@@ -287,6 +291,7 @@ components:
       properties:
         customer_id: { type: integer, description: معرّف العميل في النظام }
         notes: { type: string, nullable: true }
+        paid_amount: { type: number, format: decimal, minimum: 0, default: 0, description: المبلغ المدفوع }
     PreOrderCarRequestBodyDirect:
       description: لإنشاء طلب من المسار المسطّح — يتضمن pre_order_car_id كحقل في الجسم
       type: object
@@ -295,6 +300,7 @@ components:
         pre_order_car_id: { type: integer, description: معرّف سيارة الطلب المسبق }
         customer_id: { type: integer, description: معرّف العميل في النظام }
         notes: { type: string, nullable: true }
+        paid_amount: { type: number, format: decimal, minimum: 0, default: 0, description: المبلغ المدفوع }
     PreOrderCarRequestUpdateBody:
       type: object
       properties:
@@ -304,6 +310,7 @@ components:
           description: "draft = مسودة | pending = قيد الانتظار | completed = مكتمل"
         customer_id: { type: integer, nullable: true, description: "ممنوع تغييره إذا كان الطلب completed" }
         notes: { type: string, nullable: true }
+        paid_amount: { type: number, format: decimal, minimum: 0, description: المبلغ المدفوع }
     PreOrderCarRequestResource:
       type: object
       properties:
@@ -333,6 +340,7 @@ components:
           type: string
           enum: [draft, pending, completed]
         notes: { type: string, nullable: true }
+        paid_amount: { type: number, format: decimal, minimum: 0, description: المبلغ المدفوع }
         decided_by: { type: integer, nullable: true }
         decided_by_user:
           type: object

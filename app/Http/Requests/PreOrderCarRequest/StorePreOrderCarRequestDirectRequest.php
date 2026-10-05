@@ -26,6 +26,7 @@ class StorePreOrderCarRequestDirectRequest extends FormRequest
             'pre_order_car_id' => ['required', 'integer', 'exists:pre_order_cars,id'],
             'customer_id'      => ['required', 'integer', 'exists:customers,id'],
             'notes'            => ['nullable', 'string'],
+            'paid_amount'      => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

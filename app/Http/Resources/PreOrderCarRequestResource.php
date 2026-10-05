@@ -29,6 +29,7 @@ class PreOrderCarRequestResource extends JsonResource
             // الحالة والملاحظات
             'status' => $this->status,
             'notes'  => $this->notes,
+            'paid_amount' => (float) $this->paid_amount,
 
             // معلومات الموافقة
             'decided_by'      => $this->decided_by,

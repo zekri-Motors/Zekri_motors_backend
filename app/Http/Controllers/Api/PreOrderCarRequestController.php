@@ -102,6 +102,7 @@ class PreOrderCarRequestController extends Controller
             'customer_id' => $validated['customer_id'],
             'status'      => PreOrderCarRequest::STATUS_PENDING,
             'notes'       => $validated['notes'] ?? null,
+            'paid_amount' => $validated['paid_amount'] ?? 0,
         ]);
 
         return response()->json([
@@ -226,6 +227,7 @@ class PreOrderCarRequestController extends Controller
             'customer_id' => $validated['customer_id'],
             'status'      => PreOrderCarRequest::STATUS_PENDING,
             'notes'       => $validated['notes'] ?? null,
+            'paid_amount' => $validated['paid_amount'] ?? 0,
         ]);
 
         return response()->json([

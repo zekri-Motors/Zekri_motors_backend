@@ -21,6 +21,7 @@ class StorePreOrderCarRequestRequest extends FormRequest
         return [
             'customer_id' => ['required', 'integer', 'exists:customers,id'],
             'notes'       => ['nullable', 'string'],
+            'paid_amount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

@@ -21,6 +21,7 @@ class PreOrderCarRequest extends Model
         'customer_id',
         'status',
         'notes',
+        'paid_amount',
         'decided_by',
         'decided_at',
     ];
@@ -29,6 +30,7 @@ class PreOrderCarRequest extends Model
     {
         return [
             'decided_at' => 'datetime',
+            'paid_amount' => 'decimal:2',
         ];
     }
 
@@ -62,4 +64,3 @@ class PreOrderCarRequest extends Model
         return $this->status === self::STATUS_COMPLETED;
     }
 }
-

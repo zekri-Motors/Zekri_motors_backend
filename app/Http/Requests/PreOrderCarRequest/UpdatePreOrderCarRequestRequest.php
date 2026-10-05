@@ -33,6 +33,7 @@ class UpdatePreOrderCarRequestRequest extends FormRequest
             ],
             'notes'       => ['sometimes', 'nullable', 'string'],
             'customer_id' => ['sometimes', 'integer', 'exists:customers,id'],
+            'paid_amount' => ['sometimes', 'numeric', 'min:0'],
         ];
     }
 
