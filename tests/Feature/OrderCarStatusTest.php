@@ -139,6 +139,8 @@ class OrderCarStatusTest extends TestCase
                 'customer_id' => $currentCustomer->id,
                 'car_id' => $car->id,
                 'status' => Order::STATUS_SOLD,
+                'paid_amount' => 1000,
+                'remaining_amount' => 15000,
             ]);
         }
 
@@ -146,6 +148,9 @@ class OrderCarStatusTest extends TestCase
 
         $this->assertCount(1, $response->json('data'));
         $this->assertSame($batchOne->id, $response->json('data.0.car.batch_id'));
+        $this->assertSame(1, $response->json('total_orders'));
+        $this->assertSame(1000.0, $response->json('total_paid_amount'));
+        $this->assertSame(15000.0, $response->json('total_remaining_amount'));
     }
 
     /**

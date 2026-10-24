@@ -54,9 +54,18 @@ class OrderController extends Controller
             $query->where('agent_id', $user->agent?->id ?? 0);
         }
 
-        $orders = $query->orderByDesc('id')->paginate($request->integer('per_page', 15));
+        $summary = (clone $query)
+            ->selectRaw('COUNT(*) as total_orders, COALESCE(SUM(paid_amount), 0) as total_paid_amount, COALESCE(SUM(remaining_amount), 0) as total_remaining_amount')
+            ->first();
 
-        return response()->json(OrderResource::collection($orders)->response()->getData(true));
+        $orders = $query->orderByDesc('id')->paginate($request->integer('per_page', 15));
+        $response = OrderResource::collection($orders)->response()->getData(true);
+
+        $response['total_orders'] = (int) $summary->total_orders;
+        $response['total_paid_amount'] = (float) $summary->total_paid_amount;
+        $response['total_remaining_amount'] = (float) $summary->total_remaining_amount;
+
+        return response()->json($response);
     }
 
     /**

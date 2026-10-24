@@ -76,6 +76,19 @@ components:
     Search: { name: search, in: query, schema: { type: string } }
   responses:
     Ok: { description: OK }
+    OrdersList:
+      description: Paginated orders with totals for all orders matching the applied filters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { type: object } }
+              links: { type: object }
+              meta: { type: object }
+              total_orders: { type: integer, description: Total number of matching orders across all pages }
+              total_paid_amount: { type: number, format: float, description: Sum of paid amounts for all matching orders }
+              total_remaining_amount: { type: number, format: float, description: Sum of remaining amounts for all matching orders }
     Created: { description: Created }
     Deleted: { description: Deleted }
     Unauthenticated: { description: Unauthenticated }
@@ -717,7 +730,7 @@ paths:
     parameters: [{ name: agent, in: path, required: true, schema: { type: integer } }]
     get: { tags: [Agents], summary: Agent statement, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /orders:
-    get: { tags: [Orders], summary: List orders, parameters: [{ name: batch_id, in: query, description: Filter orders by the import batch of their car, schema: { type: integer } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    get: { tags: [Orders], summary: List orders, parameters: [{ name: batch_id, in: query, description: Filter orders by the import batch of their car, schema: { type: integer } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/OrdersList' } } }
     post: { tags: [Orders], summary: Create order, requestBody: { $ref: '#/components/requestBodies/JsonOrder' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /orders/{order}:
     parameters: [{ name: order, in: path, required: true, schema: { type: integer } }]
