@@ -717,7 +717,7 @@ paths:
     parameters: [{ name: agent, in: path, required: true, schema: { type: integer } }]
     get: { tags: [Agents], summary: Agent statement, responses: { '200': { $ref: '#/components/responses/Ok' } } }
   /orders:
-    get: { tags: [Orders], summary: List orders, parameters: [{ $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
+    get: { tags: [Orders], summary: List orders, parameters: [{ name: batch_id, in: query, description: Filter orders by the import batch of their car, schema: { type: integer } }, { $ref: '#/components/parameters/PerPage' }], responses: { '200': { $ref: '#/components/responses/Ok' } } }
     post: { tags: [Orders], summary: Create order, requestBody: { $ref: '#/components/requestBodies/JsonOrder' }, responses: { '201': { $ref: '#/components/responses/Created' } } }
   /orders/{order}:
     parameters: [{ name: order, in: path, required: true, schema: { type: integer } }]

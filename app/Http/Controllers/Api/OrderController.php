@@ -38,7 +38,11 @@ class OrderController extends Controller
         $query = Order::query()
             ->with(['customer', 'car', 'agent'])
             ->whereNotIn('id', $firstOrderIdsPerCar)
-            ->when($request->filled('status'), fn($q) => $q->where('status', $request->string('status')));
+            ->when($request->filled('status'), fn($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('batch_id'), fn($q) => $q->whereHas(
+                'car',
+                fn($carQuery) => $carQuery->where('batch_id', $request->integer('batch_id'))
+            ));
 
         if ($user->agent) {
             $query->where('agent_id', $user->agent->id);
