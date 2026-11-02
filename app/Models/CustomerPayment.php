@@ -44,6 +44,32 @@ class CustomerPayment extends Model
                 $payment->created_by = $payment->created_by ?: Auth::user()->id;
             }
         });
+
+        // Keep the cached paid/remaining totals on the related order in sync
+        // for every payment lifecycle operation, including changes made
+        // outside CustomerPaymentController.
+        static::created(function (self $payment) {
+            $payment->order?->recalculateBalance();
+        });
+
+        static::updated(function (self $payment) {
+            $payment->order?->recalculateBalance();
+
+            // If a payment is moved to another order, also repair the old
+            // order whose payment sum has just changed.
+            $oldOrderId = $payment->getOriginal('order_id');
+            if ($oldOrderId !== null && (int) $oldOrderId !== (int) $payment->order_id) {
+                Order::find($oldOrderId)?->recalculateBalance();
+            }
+        });
+
+        static::deleted(function (self $payment) {
+            Order::find($payment->order_id)?->recalculateBalance();
+        });
+
+        static::restored(function (self $payment) {
+            $payment->order?->recalculateBalance();
+        });
     }
 
     public function order(): BelongsTo
