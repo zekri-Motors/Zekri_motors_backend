@@ -21,14 +21,8 @@ class UpdateBatchRequest extends FormRequest
         return [
             'supplier_id'   => ['sometimes', 'required', 'integer', 'exists:suppliers,id'],
             'purchase_date' => ['nullable', 'date'],
-
-            // total_cost_foreign is NOT accepted from user input — it is
-            // always derived automatically from the batch's cars
-            // (see Batch::recomputeTotalCostForeign()), which in turn
-            // feeds Batch::recomputeExchangeRate(). It changes only as a
-            // side effect of adding/editing/removing a car on this batch.
-
-            // exchange_rate is computed, never user-editable.
+            'total_cost_foreign' => ['nullable', 'numeric', 'min:0'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0'],
 
             'status' => ['nullable', Rule::in([
                 Batch::STATUS_PARTIAL,

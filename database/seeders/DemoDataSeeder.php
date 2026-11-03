@@ -168,9 +168,9 @@ class DemoDataSeeder extends Seeder
     //     ), $rows);
     // }
 
-    /**
-     * @return array<int, ContainerOpener>
-     */
+    // /**
+    //  * @return array<int, ContainerOpener>
+    //  */
     private function seedContainerOpeners(): array
     {
         $rows = [

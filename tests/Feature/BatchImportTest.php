@@ -247,6 +247,37 @@ class BatchImportTest extends TestCase
             ->assertJsonPath('data.cars.0.current_owner.national_id', 'NAT-CURRENT');
     }
 
+    public function test_batch_update_can_change_status_exchange_rate_and_total_cost_foreign(): void
+    {
+        Sanctum::actingAs($this->user);
+
+        $batch = Batch::create([
+            'supplier_id' => $this->supplier->id,
+            'purchase_date' => '2026-07-01',
+            'total_cost_foreign' => 10000,
+            'exchange_rate' => 135,
+            'status' => Batch::STATUS_PARTIAL,
+        ]);
+
+        $response = $this->putJson("/api/batches/{$batch->id}", [
+            'status' => Batch::STATUS_FULLY_PAID,
+            'exchange_rate' => 136.25,
+            'total_cost_foreign' => 12500.50,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.status', Batch::STATUS_FULLY_PAID)
+            ->assertJsonPath('data.exchange_rate', 136.25)
+            ->assertJsonPath('data.total_cost_foreign', 12500.50);
+
+        $this->assertDatabaseHas('batches', [
+            'id' => $batch->id,
+            'status' => Batch::STATUS_FULLY_PAID,
+            'exchange_rate' => 136.25,
+            'total_cost_foreign' => 12500.50,
+        ]);
+    }
+
     public function test_batch_status_transitions_automatically(): void
     {
         Sanctum::actingAs($this->user);

@@ -23,14 +23,9 @@ class Batch extends Model
         'batch_number',
         'supplier_id',
         'purchase_date',
-        // total_cost_foreign is intentionally NOT in $fillable — it is
-        // always derived from SUM(cars.foreign_purchase_price) via
-        // recomputeTotalCostForeign() and never accepted from user input.
+        'total_cost_foreign',
+        'exchange_rate',
         'total_paid_amount_foreign', // auto-computed: sum of all supplier_payments.amount_foreign
-        // exchange_rate is intentionally NOT in $fillable — it is always
-        // recomputed by recomputeExchangeRate() and never accepted from
-        // user input. Any attempt to mass-assign it will be silently ignored,
-        // which is the correct behaviour here.
         'status',
         'cars_count',
         'notes',
