@@ -16,9 +16,10 @@ class CustomerResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'       => $this->id,
-            'agent_id' => $this->agent_id,
-            'agent'    => new AgentMiniResource($this->whenLoaded('agent')),
+            'id'          => $this->id,
+            'agent_id'    => $this->agent_id,
+            'agent_name'  => $this->agent?->name,
+            //'agent'       => new AgentMiniResource($this->whenLoaded('agent')),
             'name'        => $this->name,
             'phone'       => $this->phone,
             'email'       => $this->email,
