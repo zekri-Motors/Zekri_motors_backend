@@ -198,11 +198,9 @@ class CarController extends Controller
         ], 201);
     }
 
-    /** Update a cost line belonging to the specified car. */
-    public function updateExpense(UpdateCarExpenseRequest $request, Car $car, CarExpense $expense): JsonResponse
+    /** Update a car cost line. */
+    public function updateExpense(UpdateCarExpenseRequest $request, CarExpense $expense): JsonResponse
     {
-        abort_unless($expense->car_id === $car->id, 404);
-
         $expense->update($request->validated());
 
         return response()->json([

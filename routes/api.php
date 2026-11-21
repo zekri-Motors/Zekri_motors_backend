@@ -124,7 +124,7 @@ Route::middleware(['auth:sanctum', 'staff_only'])->group(function () {
     Route::get('cars/{car}/expenses', [CarController::class, 'expenses']);
     Route::get('cars/{car}/ownership-history', [CarController::class, 'ownershipHistory']);
     Route::post('cars/{car}/expenses', [CarController::class, 'storeExpense']);
-    Route::put('cars/{car}/expenses/{expense}', [CarController::class, 'updateExpense']);
+    Route::put('car-expenses/{expense}', [CarController::class, 'updateExpense']);
 
     // وثائق السيارة (متداخلة، تعتمد على CarPolicy - راجع DocumentController)
     Route::get('cars/{car}/documents', [DocumentController::class, 'index']);
