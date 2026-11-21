@@ -22,7 +22,7 @@ class StoreCustomerPaymentRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'integer', 'exists:orders,id'],
-            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            //'customer_id' => ['required', 'integer', 'exists:customers,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             // Required only when an agent physically collected the cash.
             'agent_id' => [

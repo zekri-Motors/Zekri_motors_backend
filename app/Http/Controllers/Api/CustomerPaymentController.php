@@ -20,41 +20,44 @@ use Illuminate\Support\Facades\DB;
 class CustomerPaymentController extends Controller
 {
     public function index(Request $request): JsonResponse
-    {
-        $this->authorize('viewAny', CustomerPayment::class);
+{
+    $this->authorize('viewAny', CustomerPayment::class);
 
-        $user = $request->user();
+    $request->validate([
+        'order_ids'    => ['sometimes', 'array', 'max:100'],
+        'order_ids.*'  => ['integer'],
+        'customer_ids' => ['sometimes', 'array', 'max:100'],
+        'customer_ids.*' => ['integer'],
+    ]);
 
-        $query = CustomerPayment::query()
-            ->with(['customer', 'agent', 'generalTreasuryTransfer'])
-            ->when($request->filled('order_id'), fn($q) => $q->where('order_id', $request->integer('order_id')))
-            ->when($request->filled('date_from'), fn($q) => $q->whereDate('payment_date', '>=', $request->date('date_from')))
-            ->when($request->filled('date_to'), fn($q) => $q->whereDate('payment_date', '<=', $request->date('date_to')));
+    $user = $request->user();
 
-        if ($user->agent) {
-            $query->where('agent_id', $user->agent->id);
-        } elseif ($user->can('customer_payments.view')) {
-            $query
-                ->when($request->filled('customer_id'), fn($q) => $q->where('customer_id', $request->integer('customer_id')))
-                ->when($request->filled('agent_id'), fn($q) => $q->where('agent_id', $request->integer('agent_id')))
-                ->when($request->filled('is_remitted'), function ($q) use ($request) {
-                    $request->boolean('is_remitted')
-                        ? $q->whereNotNull('remittance_id')
-                        : $q->whereNull('remittance_id');
-                });
-        } else {
-            // Scoped to: payments made by this user's own customer record,
-            // OR payments collected by this user's own agent record.
-            $query->where(function ($q) use ($user) {
-                $q->Where('agent_id', $user->agent?->id ?? 0);
+    $query = CustomerPayment::query()
+        ->with(['customer', 'agent', 'generalTreasuryTransfer'])
+        ->when($request->filled('order_id'), fn($q) => $q->where('order_id', $request->integer('order_id')))
+        ->when($request->filled('date_from'), fn($q) => $q->whereDate('payment_date', '>=', $request->date('date_from')))
+        ->when($request->filled('date_to'), fn($q) => $q->whereDate('payment_date', '<=', $request->date('date_to')));
+
+    if ($user->agent) {
+        $query->where('agent_id', $user->agent->id);
+    } elseif ($user->can('customer_payments.view')) {
+        $query
+            ->when($request->filled('customer_id'), fn($q) => $q->where('customer_id', $request->integer('customer_id')))
+            ->when($request->filled('agent_id'), fn($q) => $q->where('agent_id', $request->integer('agent_id')))
+            ->when($request->filled('is_remitted'), function ($q) use ($request) {
+                $request->boolean('is_remitted')
+                    ? $q->whereNotNull('remittance_id')
+                    : $q->whereNull('remittance_id');
             });
-        }
-
-        $payments = $query->orderByDesc('payment_date')->orderByDesc('id')
-            ->paginate($request->integer('per_page', 15));
-
-        return response()->json(CustomerPaymentResource::collection($payments)->response()->getData(true));
+    } else {
+        $query->where('agent_id', $user->agent?->id ?? 0);
     }
+
+    $payments = $query->orderByDesc('payment_date')->orderByDesc('id')
+        ->paginate($request->integer('per_page', 15));
+
+    return response()->json(CustomerPaymentResource::collection($payments)->response()->getData(true));
+}
 
     /**
      * Record a customer payment against an order.

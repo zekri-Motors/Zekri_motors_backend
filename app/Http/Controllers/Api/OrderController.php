@@ -17,6 +17,14 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
+    /** Relations needed to show the car's first and current owners. */
+    private const ORDER_RELATIONS = [
+        'customer',
+        'car.firstOrder.customer',
+        'car.currentOrder.customer',
+        'agent',
+    ];
+
     /**
      * List orders, scoped by who's asking:
      *   - admin/super-admin (orders.view): every order.
@@ -36,7 +44,7 @@ class OrderController extends Controller
             ->groupBy('car_id');
 
         $query = Order::query()
-            ->with(['customer', 'car', 'agent'])
+            ->with(self::ORDER_RELATIONS)
             ->whereNotIn('id', $firstOrderIdsPerCar)
             ->when($request->filled('status'), fn($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('batch_id'), fn($q) => $q->whereHas(
@@ -117,7 +125,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'تم إنشاء الطلب بنجاح',
-            'data' => new OrderResource($order->load(['customer', 'car', 'agent'])),
+            'data' => new OrderResource($order->load(self::ORDER_RELATIONS)),
         ], 201);
     }
 
@@ -125,7 +133,7 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        $order->load(['customer', 'car', 'agent', 'invoice']);
+        $order->load([...self::ORDER_RELATIONS, 'invoice']);
 
         if ($request->user()->can('customer_payments.view')) {
             $order->load('payments');
@@ -142,7 +150,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'تم تحديث الطلب بنجاح',
-            'data' => new OrderResource($order->load(['customer', 'car', 'agent'])),
+            'data' => new OrderResource($order->load(self::ORDER_RELATIONS)),
         ]);
     }
 
@@ -185,7 +193,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'تم تحديث حالة الطلب بنجاح',
-            'data' => new OrderResource($order->fresh()->load(['customer', 'car', 'agent'])),
+            'data' => new OrderResource($order->fresh()->load(self::ORDER_RELATIONS)),
         ]);
     }
 
