@@ -613,6 +613,30 @@ paths:
                 local_amount: { type: number }
                 notes: { type: string, nullable: true }
       responses: { '201': { $ref: '#/components/responses/Created' } }
+  /cars/{car}/expenses/{expense}:
+    parameters:
+      - { name: car, in: path, required: true, schema: { type: integer } }
+      - { name: expense, in: path, required: true, schema: { type: integer } }
+    put:
+      tags: [Cars]
+      summary: Update a car expense
+      description: Updates a cost line belonging to the specified car (not a general expense).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                expense_type: { type: string, maxLength: 100 }
+                foreign_amount: { type: number, minimum: 0, nullable: true }
+                local_amount: { type: number, minimum: 0 }
+                notes: { type: string, nullable: true }
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { description: Car expense not found for this car }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /cars/{car}/ownership-history:
     parameters: [{ name: car, in: path, required: true, schema: { type: integer } }]
     get: { tags: [Cars], summary: Car ownership history, responses: { '200': { $ref: '#/components/responses/Ok' } } }

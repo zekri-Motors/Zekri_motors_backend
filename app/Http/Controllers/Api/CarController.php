@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Car\StoreCarExpenseRequest;
+use App\Http\Requests\Car\UpdateCarExpenseRequest;
 use App\Http\Requests\Car\StoreCarRequest;
 use App\Http\Requests\Car\UpdateCarRequest;
 use App\Http\Resources\CarExpenseResource;
 use App\Http\Resources\CarResource;
 use App\Http\Resources\CarOwnershipHistoryResource;
 use App\Models\Car;
+use App\Models\CarExpense;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -194,6 +196,19 @@ class CarController extends Controller
             'message' => 'تم إضافة المصروف بنجاح',
             'data' => new CarExpenseResource($expense),
         ], 201);
+    }
+
+    /** Update a cost line belonging to the specified car. */
+    public function updateExpense(UpdateCarExpenseRequest $request, Car $car, CarExpense $expense): JsonResponse
+    {
+        abort_unless($expense->car_id === $car->id, 404);
+
+        $expense->update($request->validated());
+
+        return response()->json([
+            'message' => 'تم تحديث مصروف السيارة بنجاح',
+            'data' => new CarExpenseResource($expense->refresh()),
+        ]);
     }
 
     /**
