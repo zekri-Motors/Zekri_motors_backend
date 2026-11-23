@@ -22,7 +22,7 @@ class StoreCustomerPaymentRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'integer', 'exists:orders,id'],
-            //'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'customer_id' => ['sometimes', 'nullable', 'integer', 'exists:customers,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             // Required only when an agent physically collected the cash.
             'agent_id' => [
@@ -59,7 +59,7 @@ class StoreCustomerPaymentRequest extends FormRequest
             $orderId = $this->input('order_id');
             $customerId = $this->input('customer_id');
 
-            if (! $orderId || ! $customerId) {
+            if (! $orderId) {
                 return;
             }
 
@@ -69,7 +69,7 @@ class StoreCustomerPaymentRequest extends FormRequest
                 return;
             }
 
-            if ((int) $order->customer_id !== (int) $customerId) {
+            if ($customerId !== null && (int) $order->customer_id !== (int) $customerId) {
                 $validator->errors()->add('order_id', 'هذا الطلب لا يعود لهذا العميل');
             }
 

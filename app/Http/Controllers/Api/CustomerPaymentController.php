@@ -82,6 +82,7 @@ class CustomerPaymentController extends Controller
     {
         $payment = DB::transaction(function () use ($request) {
             $agentId = $request->validated('agent_id');
+            $order = Order::findOrFail($request->validated('order_id'));
             if ($request->user()->agent) {
                 $agentId = $request->user()->agent->id;
             }
@@ -89,7 +90,7 @@ class CustomerPaymentController extends Controller
             /** @var CustomerPayment $payment */
             $payment = CustomerPayment::create([
                 'order_id' => $request->validated('order_id'),
-                'customer_id' => $request->validated('customer_id'),
+                'customer_id' => $request->validated('customer_id') ?? $order->customer_id,
                 'amount' => $request->validated('amount'),
                 'received_by' => $request->user()->id,
                 'agent_id' => $agentId,
@@ -99,8 +100,7 @@ class CustomerPaymentController extends Controller
                 'created_by' => $request->user()->id,
             ]);
 
-            $order = Order::find($payment->order_id);
-            $order?->recalculateBalance();
+            $order->recalculateBalance();
 
             $isAdminOrSuperAdmin = $request->user()->hasAnyRole(['admin', 'super-admin']);
 

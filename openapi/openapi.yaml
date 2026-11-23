@@ -250,10 +250,10 @@ components:
         notes: { type: string, nullable: true }
     CustomerPaymentRequest:
       type: object
-      required: [order_id, customer_id, amount, payment_date]
+      required: [order_id, amount, payment_date]
       properties:
         order_id: { type: integer }
-        customer_id: { type: integer }
+        customer_id: { type: integer, nullable: true, description: 'Optional; inferred from order_id when omitted' }
         amount: { type: number }
         agent_id: { type: integer, nullable: true }
         attachment: { type: string, nullable: true }
